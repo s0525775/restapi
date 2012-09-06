@@ -30,6 +30,7 @@ import javax.servlet.http.HttpServletRequest;
 import org.apache.commons.codec.binary.Base64;
 
 import com.jpeterson.littles3.S3ObjectRequest;
+import de.desy.dcache.temp.FSLogger;
 
 /**
  * Performs Amazon S3 Authentication.
@@ -68,7 +69,13 @@ public class S3Authenticator implements Authenticator {
 		// check to see if anonymous request
 		String authorization = req.getHeader(HEADER_AUTHORIZATION);
 
-		if (authorization == null) {
+                String file1 = "/tmp/testlog.txt";
+		String text1 = "-----------------\r\n";
+		text1 += "Authorization String: " + authorization + "\r\n";
+		text1 += "-----------------\r\n\r\n";
+                FSLogger.writeLog(file1, text1);
+
+                if (authorization == null) {
 			return new CanonicalUser(CanonicalUser.ID_ANONYMOUS);
 		}
 
@@ -143,6 +150,13 @@ public class S3Authenticator implements Authenticator {
 		System.out.println("signature: " + signature);
 		System.out.println("calculatedSignature: " + calculatedSignature);
 		System.out.println("-----------------");
+                
+                String file2 = "/tmp/testlog.txt";
+		String text2 = "-----------------\r\n";
+		text2 += "signature: " + signature + "\r\n";
+		text2 += "calculatedSignature: " + calculatedSignature + "\r\n";
+		text2 += "-----------------\r\n\r\n";
+                FSLogger.writeLog(file2, text2);
 
 		if (calculatedSignature.equals(signature)) {
 			// authenticated!

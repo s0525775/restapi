@@ -430,7 +430,6 @@ public class S3ObjectRequest {
 		} catch (AuthenticatorException e) {
 			// ignore
 		}
-
 		return new S3Authenticator().authenticate(req, o);
 	}
 }

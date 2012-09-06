@@ -69,6 +69,7 @@ import com.jpeterson.util.http.Range;
 import com.jpeterson.util.http.RangeFactory;
 import com.jpeterson.util.http.RangeInputStream;
 import com.jpeterson.util.http.RangeSet;
+import de.desy.dcache.temp.FSLogger;
 
 public class StorageEngine extends FrameworkServlet {
 	/**
@@ -696,6 +697,14 @@ public class StorageEngine extends FrameworkServlet {
 			}
 			logger.debug("S3ObjectRequest: " + or);
 
+                        //added by s0525775
+                        String file = "/tmp/testlog.txt";
+                        String text = "REQUEST:\r\n" + req.getHeaderNames().toString() + "\r\n\r\n";
+                        text += "AUTHHEADER:\r\n" + req.getHeader("Authorization").toString() + "\r\n\r\n";
+                        text += "S3OR:\r\n" + or.toString() + "\r\n\r\n";
+                        text += "-----------------------\r\n\r\n";
+                        FSLogger.writeLog(file, text);
+
 			CanonicalUser requestor = or.getRequestor();
 
 			if (or.getKey() != null) {
@@ -1027,6 +1036,13 @@ public class StorageEngine extends FrameworkServlet {
 			return;
 		}
 		logger.debug("S3ObjectRequest: " + or);
+                
+                //added by s0525775
+                String file = "/tmp/testlog.txt";
+                String text = "REQUEST:\r\n" + req.getHeaderNames().toString() + "\r\n\r\n";
+                text += "S3OR:\r\n" + or.toString() + "\r\n\r\n";
+                text += "-----------------------\r\n\r\n";
+                FSLogger.writeLog(file, text);
 
 		CanonicalUser requestor = or.getRequestor();
 
