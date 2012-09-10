@@ -34,13 +34,27 @@ public class HackAuthenticator implements Authenticator {
 	 */
 	public CanonicalUser authenticate(HttpServletRequest req,
 			S3ObjectRequest s3Request) throws AuthenticatorException {
-		String username = req.getHeader("x-hack-user");
-		if (username != null) {
-			System.out.println("HACK! USING USERNAME FROM HEADER: " + username);
-			return new CanonicalUser(username);
-		} else if (authenticator != null) {
-			return authenticator.authenticate(req, s3Request);
-		}
-		return new CanonicalUser(CanonicalUser.ID_ANONYMOUS);
+//		String username = req.getHeader("x-hack-user");
+//		if (username != null) {
+//			System.out.println("HACK! USING USERNAME FROM HEADER: " + username);
+//			return new CanonicalUser(username);
+//		} else if (authenticator != null) {
+//			return authenticator.authenticate(req, s3Request);
+//		}
+//		return new CanonicalUser(CanonicalUser.ID_ANONYMOUS);            
+                String authorization = req.getHeader("Authorization").toString();
+                String[] fields = authorization.split(" ");
+                if (fields.length != 2) {
+                        throw new InvalidSecurityException("Unsupported authorization format");
+                }
+                if (!fields[0].equals("AWS")) {
+                        throw new InvalidSecurityException("Unsupported authorization type: " + fields[0]);
+                }
+                String[] keys = fields[1].split(":");
+                if (keys.length < 2) {
+                        throw new InvalidSecurityException("No, but no AWS Key? Nothing similar?");
+                }
+                String accessKeyId = keys[0];
+                return new CanonicalUser(accessKeyId);
 	}
 }

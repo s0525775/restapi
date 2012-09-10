@@ -191,6 +191,8 @@ public class StorageEngine extends FrameworkServlet {
 	/**
 	 * Subclasses must implement this method to do the work of request handling,
 	 * receiving a centralized callback for GET, POST, PUT and DELETE.
+         * Changed by s0525775, otherwise the server will try to authenticate 
+         * every request which will end in a null pointer exception.
 	 * 
 	 * @param request
 	 *            current HTTP request
@@ -206,21 +208,37 @@ public class StorageEngine extends FrameworkServlet {
 		method = getMethod(request);
 		logger.debug("Method: " + method);
 
-		if (method.equalsIgnoreCase("GET")) {
-			// read
-			methodGet(request, response);
-		} else if (method.equalsIgnoreCase("HEAD")) {
-			// headers
-			methodHead(request, response);
-		} else if (method.equalsIgnoreCase("PUT")) {
-			// create
-			methodPut(request, response);
-		} else if (method.equalsIgnoreCase("DELETE")) {
-			// remove
-			methodDelete(request, response);
-		}
+                // changed by s0525775
+                if (_hasAuthHeader(request)) {
+                    if (method.equalsIgnoreCase("GET")) {
+                            // read
+                            methodGet(request, response); 
+                    } else if (method.equalsIgnoreCase("HEAD")) {
+                            // headers
+                            methodHead(request, response);
+                    } else if (method.equalsIgnoreCase("PUT")) {
+                            // create
+                            methodPut(request, response);
+                    } else if (method.equalsIgnoreCase("DELETE")) {
+                            // remove
+                            methodDelete(request, response);
+                    }
+                }
+                
 	}
 
+        // Method added by s0525775
+        /**
+         * Prevents that the S3 Authentication will fail with a Null Pointer Exception.
+         * @param request
+         * @return 
+         */
+        private boolean _hasAuthHeader(HttpServletRequest request) {
+            return (request.getHeader("Authorization") != null && 
+                    !request.getHeader("Authorization").isEmpty());
+        }
+        
+        
 	/**
 	 * Returns the HTTP method of the request. Implements logic to allow an
 	 * "override" method, specified by the header
