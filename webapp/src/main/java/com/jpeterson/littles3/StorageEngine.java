@@ -204,6 +204,18 @@ public class StorageEngine extends FrameworkServlet {
 	protected void doService(HttpServletRequest request,
 			HttpServletResponse response) throws Exception {
 		String method;
+                
+                // added by s052775
+                StringBuffer buffer = new StringBuffer();
+                buffer.append("<html><header><title>S3 Server littles3");
+                buffer.append("</title></header><body>");
+                buffer.append("<h1>S3 Server littles3</h1>");
+                buffer.append("</body></html>");
+                response.setContentLength(buffer.length());
+		response.setContentType("text/html");
+		response.setStatus(HttpServletResponse.SC_OK);
+                Writer out = response.getWriter();
+                out.write(buffer.toString());
 
 		method = getMethod(request);
 		logger.debug("Method: " + method);
