@@ -31,13 +31,24 @@ import org.apache.commons.codec.binary.Base64;
 
 import com.jpeterson.littles3.S3ObjectRequest;
 import de.desy.dcache.temp.FSLogger;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.apache.commons.codec.binary.Hex;
 
 /**
  * Performs Amazon S3 Authentication.
  * 
- * @author Jesse Peterson
+ * @author Jesse Peterson, changed by s0525775
  */
 public class S3Authenticator implements Authenticator {
+    	public static final String HEADER_HTTP_METHOD_OVERRIDE = "X-HTTP-Method-Override";
+    
 	private static final String HEADER_AUTHORIZATION = "Authorization";
 
 	private static final String AUTHORIZATION_TYPE = "AWS";
@@ -69,43 +80,65 @@ public class S3Authenticator implements Authenticator {
 		// check to see if anonymous request
 		String authorization = req.getHeader(HEADER_AUTHORIZATION);
 
-                String file1 = "/tmp/testlog.txt";
-		String text1 = "-----------------\r\n";
-		text1 += "Authorization String: " + authorization + "\r\n";
-		text1 += "-----------------\r\n\r\n";
-                FSLogger.writeLog(file1, text1);
-
-                if (authorization == null) {
-			return new CanonicalUser(CanonicalUser.ID_ANONYMOUS);
-		}
+                // s0525775 - not wanted - either authenticated or nothing
+                //if (authorization == null) {
+                //	return new CanonicalUser(CanonicalUser.ID_ANONYMOUS);
+                //}
 
 		// attempting to be authenticated request
 
-		if (false) {
-			// check timestamp of request
-			Date timestamp = s3Request.getTimestamp();
-			if (timestamp == null) {
-				throw new RequestTimeTooSkewedException("No timestamp provided");
-			}
+                // changed by s0525775
+                // http://docs.amazonwebservices.com/AmazonS3/2006-03-01/dev/RESTAuthentication.html
+                String HTTPverb = getMethod(req);
+                String contentMD5 = req.getHeader("Content-MD5");
+                String contentType = req.getHeader("Content-Type");
+                String date = req.getHeader("Date");
+                String canonicalizedAmzHeaders = getAmzHeaders(req);
+                String canonicalizedResource = getResHeaders(req);
+                
+                if (contentMD5 == null) {
+                    contentMD5 = "";
+                }
+                
+                if (contentType == null) {
+                    contentType = "";
+                }
 
-			GregorianCalendar calendar = new GregorianCalendar();
-			Date now = calendar.getTime();
-			calendar.add(Calendar.MINUTE, 15);
-			Date maximumDate = calendar.getTime();
-			calendar.add(Calendar.MINUTE, -30);
-			Date minimumDate = calendar.getTime();
-
-			if (timestamp.before(minimumDate)) {
-				throw new RequestTimeTooSkewedException("Timestamp ["
-						+ timestamp + "] too old. System time: " + now);
-			}
-
-			if (timestamp.after(maximumDate)) {
-				throw new RequestTimeTooSkewedException("Timestamp ["
-						+ timestamp + "] too new. System time: " + now);
-			}
-		}
-
+                String stringToSign = HTTPverb + "\n" +
+                        contentMD5 + "\n" +
+                        contentType + "\n" +
+                        date + "\n" +
+                        canonicalizedAmzHeaders +
+                        canonicalizedResource;
+                
+                // the following code was already inactive in any case, false is always false
+                // the code should verify if the signature/certificate is still valid
+                // at the moment this doesn't get verified
+		//if (false) {
+		//	// check timestamp of request
+		//	Date timestamp = s3Request.getTimestamp();
+		//	if (timestamp == null) {
+		//		throw new RequestTimeTooSkewedException("No timestamp provided");
+		//	}
+                //
+		//	GregorianCalendar calendar = new GregorianCalendar();
+		//	Date now = calendar.getTime();
+		//	calendar.add(Calendar.MINUTE, 15);
+		//	Date maximumDate = calendar.getTime();
+		//	calendar.add(Calendar.MINUTE, -30);
+		//	Date minimumDate = calendar.getTime();
+                //
+		//	if (timestamp.before(minimumDate)) {
+		//		throw new RequestTimeTooSkewedException("Timestamp ["
+		//				+ timestamp + "] too old. System time: " + now);
+		//	}
+                //
+		//	if (timestamp.after(maximumDate)) {
+		//		throw new RequestTimeTooSkewedException("Timestamp ["
+		//				+ timestamp + "] too new. System time: " + now);
+		//	}
+		//}
+                
 		// authenticate request
 		String[] fields = authorization.split(" ");
 
@@ -126,48 +159,213 @@ public class S3Authenticator implements Authenticator {
 					"Invalid AWSAccesskeyId:Signature");
 		}
 
-		String accessKeyId = keys[0];
 		String signature = keys[1];
-		String secretAccessKey = userDirectory
-				.getAwsSecretAccessKey(accessKeyId);
-		String calculatedSignature;
+		String calculatedSignature = "";
+		String accessKeyId = keys[0];
+		//String secretAccessKey = userDirectory
+		//		.getAwsSecretAccessKey(accessKeyId);
+                String secretAccessKey="aGJSBPY5Cbafhb5UPKlbNRluXlFj9JIVqFx103w2";
 
-		try {
-			SecretKey key = new SecretKeySpec(secretAccessKey.getBytes(),
-					"HmacSHA1");
-			Mac m = Mac.getInstance("HmacSHA1");
-			m.init(key);
-			m.update(s3Request.getStringToSign().getBytes());
-			byte[] mac = m.doFinal();
-			calculatedSignature = new String(Base64.encodeBase64(mac));
-		} catch (NoSuchAlgorithmException e) {
-			throw new InvalidSecurityException(e);
-		} catch (InvalidKeyException e) {
-			throw new InvalidSecurityException(e);
-		}
+                // deactivated by s0525775
+		//try {
+		//	SecretKey key = new SecretKeySpec(secretAccessKey.getBytes(),
+		//			"HmacSHA1");
+		//	Mac m = Mac.getInstance("HmacSHA1");
+		//	m.init(key);
+		//	m.update(s3Request.getStringToSign().getBytes());
+		//	byte[] mac = m.doFinal();
+		//	calculatedSignature = new String(Base64.encodeBase64(mac));
+		//} catch (NoSuchAlgorithmException e) {
+		//	throw new InvalidSecurityException(e);
+		//} catch (InvalidKeyException e) {
+		//	throw new InvalidSecurityException(e);
+		//}
+                
+                // Signature = Base64(HMAC-SHA1(secretAccessKey, UTF-8-Encoding-Of(stringToSign)));
+                // Authorization = "AWS" + " " + AWSAccessKeyId + ":" + Signature;
+
+                try {
+                    String stringToSignUTF8 = URLEncoder.encode(stringToSign, "UTF-8"); //not sure if necessary
+                    byte[] hashSignature = hmacSha1(stringToSignUTF8, secretAccessKey).getBytes();
+                    calculatedSignature = new String(Base64.encodeBase64(hashSignature));
+                } catch (UnsupportedEncodingException ex) {
+                    Logger.getLogger(S3Authenticator.class.getName()).log(Level.SEVERE, null, ex);
+                }
 
 		System.out.println("-----------------");
+		System.out.println("stringToSign: " + stringToSign);
 		System.out.println("signature: " + signature);
 		System.out.println("calculatedSignature: " + calculatedSignature);
 		System.out.println("-----------------");
                 
                 String file2 = "/tmp/testlog.txt";
 		String text2 = "-----------------\r\n";
+		text2 += "stringToSign: " + stringToSign + "\r\n";
 		text2 += "signature: " + signature + "\r\n";
 		text2 += "calculatedSignature: " + calculatedSignature + "\r\n";
 		text2 += "-----------------\r\n\r\n";
                 FSLogger.writeLog(file2, text2);
 
+                // changed by s0525775
 		if (calculatedSignature.equals(signature)) {
-			// authenticated!
-			return userDirectory.getCanonicalUser(secretAccessKey);
+			// authenticated! needs to get verified
+			return userDirectory.getCanonicalUser(accessKeyId);
 		} else {
 			throw new SignatureDoesNotMatchException(
 					"Provided signature doesn't match calculated value");
 		}
 	}
+        
+        /**
+         * 
+         * @param value
+         * @param key
+         * @return 
+         */
+        public static String hmacSha1(String value, String key) {
+                try {
+                        // Get an hmac_sha1 key from the raw key bytes
+                        byte[] keyBytes = key.getBytes();           
+                        SecretKeySpec signingKey = new SecretKeySpec(keyBytes, "HmacSHA1");
 
-	/**
+                        // Get an hmac_sha1 Mac instance and initialize with the signing key
+                        Mac mac = Mac.getInstance("HmacSHA1");
+                        mac.init(signingKey);
+
+                        // Compute the hmac on input data bytes
+                        byte[] rawHmac = mac.doFinal(value.getBytes());
+
+                        // Convert raw bytes to Hex
+                        byte[] hexBytes = new Hex().encode(rawHmac);
+
+                        //  Covert array of Hex bytes to a String
+                        return new String(hexBytes, "UTF-8");
+                } catch (Exception e) {
+                        throw new RuntimeException(e);
+                }
+        }
+
+        /**
+	 * Returns the HTTP method of the request. Implements logic to allow an
+	 * "override" method, specified by the header
+	 * <code>HEADER_HTTP_METHOD_OVERRIDE</code>. If the override method is
+	 * provided, it takes precedence over the actual method derived from
+	 * <code>request.getMethod()</code>.
+	 * 
+	 * @param request
+	 *            The request being processed.
+	 * @return The method of the request.
+	 * @see #HEADER_HTTP_METHOD_OVERRIDE
+	 */
+	public static String getMethod(HttpServletRequest request) {
+                String HTTPverb = ""; 
+		String method = request.getHeader(HEADER_HTTP_METHOD_OVERRIDE);
+
+		if (method == null) {
+			method = request.getMethod();
+		}
+
+                if (method.equalsIgnoreCase("GET")) {
+                    // read
+                    HTTPverb = "GET"; 
+                } else if (method.equalsIgnoreCase("PUT")) {
+                    // create
+                    HTTPverb = "PUT";
+                } else if (method.equalsIgnoreCase("DELETE")) {
+                    // remove
+                    HTTPverb = "DELETE";
+                }
+
+                return HTTPverb;
+	}
+
+        /**
+	 * Returns the HTTP method of the request. Implements logic to allow an
+	 * "override" method, specified by the header
+	 * <code>HEADER_HTTP_METHOD_OVERRIDE</code>. If the override method is
+	 * provided, it takes precedence over the actual method derived from
+	 * <code>request.getMethod()</code>.
+	 * 
+	 * @param request
+	 *            The request being processed.
+	 * @return The method of the request.
+	 * @see #HEADER_HTTP_METHOD_OVERRIDE
+	 */
+	public static String getAmzHeaders(HttpServletRequest request) {
+                String amzHeaders = "";
+                
+                List<String> amzHeadersList = new ArrayList<String>();
+                amzHeadersList.clear();
+                
+                for (Enumeration e1 = request.getHeaderNames(); e1.hasMoreElements();) {
+                    String amzHeader = e1.nextElement().toString().toLowerCase();
+                            
+                    if (amzHeader.equalsIgnoreCase("x-amz-")) {
+                        String itemList = amzHeader.split(":")[0] + ":";
+
+                        for (Enumeration e2 = request.getHeaders(amzHeader); e2.hasMoreElements();) {
+                            String element = e1.nextElement().toString().toLowerCase().replace(" ", "").trim();
+                            String amzHeaderName = element.split(":")[0];
+                            itemList += element.replace(amzHeaderName, "").replace(":", "") + ",";
+                        }
+                        
+                        amzHeadersList.add(itemList.substring(0, itemList.length()-1));
+                    }
+                }
+                
+                sortStringList(amzHeadersList);
+                
+                for (String element : amzHeadersList) {
+                    amzHeaders += element + "\n";
+                }
+                
+                if (!amzHeaders.isEmpty()) {
+                    amzHeaders = amzHeaders.substring(0, amzHeaders.length()-1);
+                }
+                
+		return amzHeaders;
+	}
+
+        /**
+	 * Returns the HTTP method of the request. Implements logic to allow an
+	 * "override" method, specified by the header
+	 * <code>HEADER_HTTP_METHOD_OVERRIDE</code>. If the override method is
+	 * provided, it takes precedence over the actual method derived from
+	 * <code>request.getMethod()</code>.
+	 * 
+	 * @param request
+	 *            The request being processed.
+	 * @return The method of the request.
+	 * @see #HEADER_HTTP_METHOD_OVERRIDE
+	 */
+	public static String getResHeaders(HttpServletRequest request) {
+                String resHeader = "";
+                String bucket = "";
+                String resource = "";
+		String method = request.getHeader(HEADER_HTTP_METHOD_OVERRIDE);
+                String hostHeader = request.getHeader("Host");
+                
+                if (hostHeader.contains(".")) {
+                    bucket = hostHeader.split(".")[0];
+                }
+                
+                if (hostHeader.contains(" ")) {
+                    resource = method.split(" ")[1];
+                }
+
+                if (getMethod(request).equalsIgnoreCase("GET") || getMethod(request).equalsIgnoreCase("PUT")) {
+                    if (resource.startsWith("/")) {
+                        resource = resource.substring(1, resource.length()-1);
+                    }
+                    resHeader = bucket + "/" + resource;
+                } else if (getMethod(request).equalsIgnoreCase("DELETE")) {
+                    resHeader = resource;
+                }
+
+		return resHeader;
+	}        
+        
+        /**
 	 * Get the <code>UserDirectory</code> for accessing user information for
 	 * authentication.
 	 * 
@@ -189,4 +387,17 @@ public class S3Authenticator implements Authenticator {
 	public void setUserDirectory(UserDirectory userDirectory) {
 		this.userDirectory = userDirectory;
 	}
+        
+	/**
+	 * Set the <code>UserDirectory</code> for accessing user information for
+	 * authentication.
+	 * 
+	 * @param userDirectory
+	 *            The <code>UserDirectory</code> for accessing user information
+	 *            for authentication.
+	 */
+        private static void sortStringList(List<String> strings){
+            Collections.sort(strings, String.CASE_INSENSITIVE_ORDER);
+        }
+        
 }

@@ -424,12 +424,12 @@ public class S3ObjectRequest {
 	public static CanonicalUser authenticate(HttpServletRequest req,
 			S3ObjectRequest o) throws AuthenticatorException {
 		// TODO: remove hack
-		try {
-			Authenticator hackAuthenticator = new HackAuthenticator();
-			return hackAuthenticator.authenticate(req, o);
-		} catch (AuthenticatorException e) {
-			// ignore
-		}
+//		try {
+//			Authenticator hackAuthenticator = new HackAuthenticator();
+//			return hackAuthenticator.authenticate(req, o);
+//		} catch (AuthenticatorException e) {
+//			// ignore
+//		}
 		return new S3Authenticator().authenticate(req, o);
 	}
 }
