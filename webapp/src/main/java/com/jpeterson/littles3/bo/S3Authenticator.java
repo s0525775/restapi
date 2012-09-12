@@ -30,9 +30,11 @@ import javax.servlet.http.HttpServletRequest;
 import org.apache.commons.codec.binary.Base64;
 
 import com.jpeterson.littles3.S3ObjectRequest;
+import de.desy.dcache.s3.Signature;
 import de.desy.dcache.temp.FSLogger;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.security.SignatureException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -161,7 +163,9 @@ public class S3Authenticator implements Authenticator {
 
 		String signature = keys[1];
 		String calculatedSignature = "";
+                String stringToSignUTF8 = "";
 		String accessKeyId = keys[0];
+                byte[] hashSignature;
 		//String secretAccessKey = userDirectory
 		//		.getAwsSecretAccessKey(accessKeyId);
                 String secretAccessKey="aGJSBPY5Cbafhb5UPKlbNRluXlFj9JIVqFx103w2";
@@ -185,10 +189,11 @@ public class S3Authenticator implements Authenticator {
                 // Authorization = "AWS" + " " + AWSAccessKeyId + ":" + Signature;
 
                 try {
-                    String stringToSignUTF8 = URLEncoder.encode(stringToSign, "UTF-8"); //not sure if necessary
-                    byte[] hashSignature = hmacSha1(stringToSignUTF8, secretAccessKey).getBytes();
-                    calculatedSignature = new String(Base64.encodeBase64(hashSignature));
+                    stringToSignUTF8 = URLEncoder.encode(stringToSign, "UTF-8");
+                    calculatedSignature = Signature.calculateRFC2104HMAC(stringToSign, secretAccessKey);
                 } catch (UnsupportedEncodingException ex) {
+                    Logger.getLogger(S3Authenticator.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (SignatureException ex) {
                     Logger.getLogger(S3Authenticator.class.getName()).log(Level.SEVERE, null, ex);
                 }
 
@@ -200,9 +205,9 @@ public class S3Authenticator implements Authenticator {
                 
                 String file2 = "/tmp/testlog.txt";
 		String text2 = "-----------------\r\n";
-		text2 += "stringToSign: " + stringToSign + "\r\n";
-		text2 += "signature: " + signature + "\r\n";
-		text2 += "calculatedSignature: " + calculatedSignature + "\r\n";
+		text2 += "stringToSign: \r\n>>" + stringToSign + "<<\r\n";
+		text2 += "ClientSignature: " + signature + "\r\n";
+		text2 += "ServerSignature: " + calculatedSignature + "\r\n";
 		text2 += "-----------------\r\n\r\n";
                 FSLogger.writeLog(file2, text2);
 
@@ -216,35 +221,6 @@ public class S3Authenticator implements Authenticator {
 		}
 	}
         
-        /**
-         * 
-         * @param value
-         * @param key
-         * @return 
-         */
-        public static String hmacSha1(String value, String key) {
-                try {
-                        // Get an hmac_sha1 key from the raw key bytes
-                        byte[] keyBytes = key.getBytes();           
-                        SecretKeySpec signingKey = new SecretKeySpec(keyBytes, "HmacSHA1");
-
-                        // Get an hmac_sha1 Mac instance and initialize with the signing key
-                        Mac mac = Mac.getInstance("HmacSHA1");
-                        mac.init(signingKey);
-
-                        // Compute the hmac on input data bytes
-                        byte[] rawHmac = mac.doFinal(value.getBytes());
-
-                        // Convert raw bytes to Hex
-                        byte[] hexBytes = new Hex().encode(rawHmac);
-
-                        //  Covert array of Hex bytes to a String
-                        return new String(hexBytes, "UTF-8");
-                } catch (Exception e) {
-                        throw new RuntimeException(e);
-                }
-        }
-
         /**
 	 * Returns the HTTP method of the request. Implements logic to allow an
 	 * "override" method, specified by the header
@@ -278,7 +254,7 @@ public class S3Authenticator implements Authenticator {
 
                 return HTTPverb;
 	}
-
+        
         /**
 	 * Returns the HTTP method of the request. Implements logic to allow an
 	 * "override" method, specified by the header
@@ -292,7 +268,8 @@ public class S3Authenticator implements Authenticator {
 	 * @see #HEADER_HTTP_METHOD_OVERRIDE
 	 */
 	public static String getAmzHeaders(HttpServletRequest request) {
-                String amzHeaders = "";
+            String amzHeaders = "";
+            /*
                 
                 List<String> amzHeadersList = new ArrayList<String>();
                 amzHeadersList.clear();
@@ -323,6 +300,8 @@ public class S3Authenticator implements Authenticator {
                     amzHeaders = amzHeaders.substring(0, amzHeaders.length()-1);
                 }
                 
+                */
+                amzHeaders = "";
 		return amzHeaders;
 	}
 
@@ -340,28 +319,40 @@ public class S3Authenticator implements Authenticator {
 	 */
 	public static String getResHeaders(HttpServletRequest request) {
                 String resHeader = "";
-                String bucket = "";
+                String bucketAndOrHost = "";
                 String resource = "";
 		String method = request.getHeader(HEADER_HTTP_METHOD_OVERRIDE);
                 String hostHeader = request.getHeader("Host");
                 
-                if (hostHeader.contains(".")) {
-                    bucket = hostHeader.split(".")[0];
+                if (hostHeader != null) {
+                    if (hostHeader.contains(".")) { //in this order
+                        bucketAndOrHost = "/" + hostHeader.split(".")[0];
+                    } else if (hostHeader.contains(":")) {
+                        bucketAndOrHost = "/" + hostHeader.split(":")[0];
+                    } else if (hostHeader.contains("/")) {
+                        bucketAndOrHost = "/" + hostHeader.split("/")[0];
+                    }
+                } else {
+                    bucketAndOrHost = "/";
+                }
+
+                if (method != null) {
+                    if (method.contains(" ")) {
+                        resource += method.split(" ")[1];
+                    }
+		} else {
+                    resource += request.getRequestURI();
                 }
                 
-                if (hostHeader.contains(" ")) {
-                    resource = method.split(" ")[1];
+                if (request.getAttribute("versioning") != null) {
+                    resource += request.getAttribute("versioning");
                 }
-
-                if (getMethod(request).equalsIgnoreCase("GET") || getMethod(request).equalsIgnoreCase("PUT")) {
-                    if (resource.startsWith("/")) {
-                        resource = resource.substring(1, resource.length()-1);
-                    }
-                    resHeader = bucket + "/" + resource;
-                } else if (getMethod(request).equalsIgnoreCase("DELETE")) {
-                    resHeader = resource;
+                                
+                if (resource.startsWith("/")) {
+                    resource = resource.substring(1, resource.length());
                 }
-
+                resHeader = bucketAndOrHost + "/" + resource;
+                
 		return resHeader;
 	}        
         
