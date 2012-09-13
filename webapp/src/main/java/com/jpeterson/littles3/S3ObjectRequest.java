@@ -152,7 +152,7 @@ public class S3ObjectRequest {
 								+ 1 + bucket.length(), requestURI.length());
 					}
 				} else {
-					bucket = pathInfo.substring(1);
+					bucket = pathInfo.substring(1).split(".")[0];
 				}
 			}
 		} else if (host.endsWith("." + baseHost)) {

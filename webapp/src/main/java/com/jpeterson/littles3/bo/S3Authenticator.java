@@ -50,7 +50,7 @@ import org.apache.commons.codec.binary.Hex;
  */
 public class S3Authenticator implements Authenticator {
     	public static final String HEADER_HTTP_METHOD_OVERRIDE = "X-HTTP-Method-Override";
-    
+        
 	private static final String HEADER_AUTHORIZATION = "Authorization";
 
 	private static final String AUTHORIZATION_TYPE = "AWS";
@@ -95,6 +95,7 @@ public class S3Authenticator implements Authenticator {
                 String contentMD5 = req.getHeader("Content-MD5");
                 String contentType = req.getHeader("Content-Type");
                 String date = req.getHeader("Date");
+                
                 String canonicalizedAmzHeaders = getAmzHeaders(req);
                 String canonicalizedResource = getResHeaders(req);
                 
@@ -112,7 +113,7 @@ public class S3Authenticator implements Authenticator {
                         date + "\n" +
                         canonicalizedAmzHeaders +
                         canonicalizedResource;
-                
+                                
                 // the following code was already inactive in any case, false is always false
                 // the code should verify if the signature/certificate is still valid
                 // at the moment this doesn't get verified
@@ -163,9 +164,7 @@ public class S3Authenticator implements Authenticator {
 
 		String signature = keys[1];
 		String calculatedSignature = "";
-                String stringToSignUTF8 = "";
 		String accessKeyId = keys[0];
-                byte[] hashSignature;
 		//String secretAccessKey = userDirectory
 		//		.getAwsSecretAccessKey(accessKeyId);
                 String secretAccessKey="aGJSBPY5Cbafhb5UPKlbNRluXlFj9JIVqFx103w2";
@@ -189,10 +188,7 @@ public class S3Authenticator implements Authenticator {
                 // Authorization = "AWS" + " " + AWSAccessKeyId + ":" + Signature;
 
                 try {
-                    stringToSignUTF8 = URLEncoder.encode(stringToSign, "UTF-8");
                     calculatedSignature = Signature.calculateRFC2104HMAC(stringToSign, secretAccessKey);
-                } catch (UnsupportedEncodingException ex) {
-                    Logger.getLogger(S3Authenticator.class.getName()).log(Level.SEVERE, null, ex);
                 } catch (SignatureException ex) {
                     Logger.getLogger(S3Authenticator.class.getName()).log(Level.SEVERE, null, ex);
                 }
@@ -213,11 +209,12 @@ public class S3Authenticator implements Authenticator {
 
                 // changed by s0525775
 		if (calculatedSignature.equals(signature)) {
-			// authenticated! needs to get verified
-			return userDirectory.getCanonicalUser(accessKeyId);
+                    // authenticated! needs to get verified
+                    return new CanonicalUser("ggg");
+                    //return userDirectory.getCanonicalUser("aGJSBPY5Cbafhb5UPKlbNRluXlFj9JIVqFx103w2");
 		} else {
-			throw new SignatureDoesNotMatchException(
-					"Provided signature doesn't match calculated value");
+                    throw new SignatureDoesNotMatchException(
+			"Provided signature doesn't match calculated value");
 		}
 	}
         
@@ -319,23 +316,24 @@ public class S3Authenticator implements Authenticator {
 	 */
 	public static String getResHeaders(HttpServletRequest request) {
                 String resHeader = "";
-                String bucketAndOrHost = "";
+                String bucket = "";
                 String resource = "";
 		String method = request.getHeader(HEADER_HTTP_METHOD_OVERRIDE);
                 String hostHeader = request.getHeader("Host");
                 
+                // decides if path related or virtual host related 
+                // and gets the bucket name if virtual host related
                 if (hostHeader != null) {
-                    if (hostHeader.contains(".")) { //in this order
-                        bucketAndOrHost = "/" + hostHeader.split(".")[0];
-                    } else if (hostHeader.contains(":")) {
-                        bucketAndOrHost = "/" + hostHeader.split(":")[0];
-                    } else if (hostHeader.contains("/")) {
-                        bucketAndOrHost = "/" + hostHeader.split("/")[0];
+                    // a bit complex, but split()[0] didn't work here, but substring
+                    if (hostHeader.indexOf('/') > 0) { //in this order
+                        bucket = "";
+                    } else if (hostHeader.indexOf('.') > 0) {
+                        bucket += "/" + hostHeader.substring(0, hostHeader.indexOf('.'));
                     }
-                } else {
-                    bucketAndOrHost = "/";
                 }
-
+                
+                // tries to get the ressource
+                // and gets the bucket name if path related
                 if (method != null) {
                     if (method.contains(" ")) {
                         resource += method.split(" ")[1];
@@ -344,17 +342,57 @@ public class S3Authenticator implements Authenticator {
                     resource += request.getRequestURI();
                 }
                 
-                if (request.getAttribute("versioning") != null) {
-                    resource += request.getAttribute("versioning");
+                // adds the Query String to the resource
+                // attention, it has to follow the 4th Amazon rule, which says:
+                // If the request addresses a sub-resource, like ?versioning, ?location, ?acl, ?torrent, ?lifecycle, 
+                // or ?versionid append the sub-resource, its value if it has one, and the question mark. Note that 
+                // in case of multiple sub-resources, sub-resources must be lexicographically sorted by sub-resource 
+                // name and separated by '&'. e.g. ?acl&versionId=value.
+                // The list of sub-resources that must be included when constructing the CanonicalizedResource 
+                // Element are: acl, lifecycle, location, logging, notification, partNumber, policy, requestPayment, 
+                // torrent, uploadId, uploads, versionId, versioning, versions and website.
+                // If the request specifies query string parameters overriding the response header values (see Get 
+                // Object), append the query string parameters, and its values. When signing you do not encode these
+                // values. However, when making the request, you must encode these parameter values. The query string 
+                // parameters in a GET request include response-content-type, response-content-language, 
+                // response-expires, response-cache-control, response-content-disposition, response-content-encoding.
+                // The delete query string parameter must be including when creating the CanonicalizedResource for a 
+                // Multi-Object Delete request.
+                if (request.getQueryString() != null) {
+                    resource += "?" + getQueryString(request.getQueryString());
                 }
-                                
+                
+                // formats the ressource String so that it can't be "//".
                 if (resource.startsWith("/")) {
                     resource = resource.substring(1, resource.length());
                 }
-                resHeader = bucketAndOrHost + "/" + resource;
+                resHeader = bucket + "/" + resource;
                 
 		return resHeader;
 	}        
+        
+        //Handle query string
+        /**
+         * 
+         * @param tmpQueryString
+         * @return 
+         */
+        public static String getQueryString(String tmpQueryString) {
+            String queryString = "";
+            boolean result = false;
+            String sArray[] = new String[]{"acl","lifecycle","location","logging","notification",
+                "partnumber","policy","requestpayment","torrent","uploadid","uploads","versionid",
+                "versioning","versions","website"};
+            for (int i = 0; i < sArray.length; i++) {
+                if (tmpQueryString.toLowerCase().startsWith(sArray[i])) {
+                    result = true;
+                }
+            }
+            if (result) {
+                queryString = "?" + tmpQueryString;
+            }
+            return queryString;
+        }
         
         /**
 	 * Get the <code>UserDirectory</code> for accessing user information for
