@@ -303,7 +303,7 @@ public class DatabaseConnection {
      * @return 
      */
     private boolean _fetchDBInformationFromProperties() {
-        //todo: get all DB information from StorageEngine.properties.
+        //todo: get all DB information from Database.properties.
         connectionString = "jdbc:postgresql://127.0.0.1:5432/awsuser";
         dbuser = "awsuser";
         dbpassword = "awsuser";

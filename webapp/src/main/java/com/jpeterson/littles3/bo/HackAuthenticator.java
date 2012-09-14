@@ -6,6 +6,7 @@ import com.jpeterson.littles3.S3ObjectRequest;
 
 /**
  * Simple Authenticator used for development.
+ * Not in function anymore. s0525775.
  * 
  * @author Jesse Peterson
  */

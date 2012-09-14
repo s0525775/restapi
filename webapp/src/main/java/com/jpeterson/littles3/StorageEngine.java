@@ -637,12 +637,13 @@ public class StorageEngine extends FrameworkServlet {
 
 				StringBuffer buffer = new StringBuffer();
 
+                                // changed by s0525775
 				buffer.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
 				buffer
-						.append("<ListAllMyBucketsResult xmlns=\"http://s3.amazonaws.com/doc/2006-03-01/\">");
+						.append("<ListAllMyBucketsResult xmlns=\"http://doc.s3.amazonaws.com/2006-03-01/\">");
 				buffer.append("<Owner>");
-				buffer.append("<ID/>"); // TODO: implement
-				buffer.append("<DisplayName/>"); // TODO: implementF
+				buffer.append("<ID>ggg</ID>"); // TODO: implement
+				buffer.append("<DisplayName>ggg</DisplayName>"); // TODO: implementF
 				buffer.append("</Owner>");
 				buffer.append("<Buckets>");
 				for (Iterator iter = buckets.iterator(); iter.hasNext();) {
@@ -1297,6 +1298,11 @@ public class StorageEngine extends FrameworkServlet {
 					CONFIG_HOST_TOKEN_RESOLVED_LOCAL_HOST, resolvedLocalHost);
 		}
 
+                // changed by s0525775
+                if (configHost.indexOf(':') > 0) {
+                    configHost = configHost.substring(0, configHost.indexOf(':'));
+                }
+                
 		return configHost;
 	}
 }

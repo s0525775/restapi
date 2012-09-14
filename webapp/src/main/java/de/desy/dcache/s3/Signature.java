@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 Jesse Peterson.
+ * Copyright 2012 s0525775 / DESY / Amazon.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,10 +21,10 @@ import javax.crypto.spec.SecretKeySpec;
 import org.apache.commons.codec.binary.Base64;
 
 /**
- *
- * @author Amazon
- * http://docs.amazonwebservices.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/AuthJavaSampleHMACSignature.html
- */
+*
+* @author Amazon
+* http://docs.amazonwebservices.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/AuthJavaSampleHMACSignature.html
+*/
 /**
 * This class defines common routines for generating
 * authentication signatures for AWS requests.

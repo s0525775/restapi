@@ -1,0 +1,22 @@
+%awsSecretAccessKeys = (
+    # personal account
+    personal1 => {
+        id => 'AKIAJ2FBI63FU5ECPSUA',
+        key => 'aGJSBPY5Cbafhb5UPKlbNRluXlFj7JIVqFx103w1',
+    },
+    # personal account
+    personal2 => {
+        id => 'AKIAJ2FBI63FU5ECPSUB',
+        key => 'aGJSBPY5Cbafhb5UPKlbNRluXlFj7JIVqFx103w2',
+    },
+    # personal account
+    personal3 => {
+        id => 'AKIAJ2FBI63FU5ECPSUC',
+        key => 'aGJSBPY5Cbafhb5UPKlbNRluXlFj7JIVqFx103w3',
+    },
+    # personal account
+    foo => {
+        id => '1000',
+        key => 'xpivpiuo',
+    },
+);

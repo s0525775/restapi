@@ -103,6 +103,9 @@ public class S3ObjectRequest {
 		host = req.getHeader("Host");
 		if (host != null) {
 			host = host.toLowerCase();
+                        if (host.indexOf(':') > 0) {
+                            host = host.substring(0, host.indexOf(':'));
+                        }
 		}
 
 		try {
@@ -152,7 +155,7 @@ public class S3ObjectRequest {
 								+ 1 + bucket.length(), requestURI.length());
 					}
 				} else {
-					bucket = pathInfo.substring(1).split(".")[0];
+					bucket = pathInfo.substring(1);
 				}
 			}
 		} else if (host.endsWith("." + baseHost)) {

@@ -81,7 +81,7 @@ public class S3Authenticator implements Authenticator {
 			S3ObjectRequest s3Request) throws AuthenticatorException {
 		// check to see if anonymous request
 		String authorization = req.getHeader(HEADER_AUTHORIZATION);
-
+                
                 // s0525775 - not wanted - either authenticated or nothing
                 //if (authorization == null) {
                 //	return new CanonicalUser(CanonicalUser.ID_ANONYMOUS);
@@ -91,6 +91,9 @@ public class S3Authenticator implements Authenticator {
 
                 // changed by s0525775
                 // http://docs.amazonwebservices.com/AmazonS3/2006-03-01/dev/RESTAuthentication.html
+                
+                userDirectory = new StaticUserDirectory();
+                
                 String HTTPverb = getMethod(req);
                 String contentMD5 = req.getHeader("Content-MD5");
                 String contentType = req.getHeader("Content-Type");
@@ -114,9 +117,11 @@ public class S3Authenticator implements Authenticator {
                         canonicalizedAmzHeaders +
                         canonicalizedResource;
                                 
-                // the following code was already inactive in any case, false is always false
-                // the code should verify if the signature/certificate is still valid
-                // at the moment this doesn't get verified
+                // the following code was already inactive in any case, false is always false.
+                // the code should verify if the requests is still valid.
+                // in the future, requests should be limited in time and only
+                // be valid for 12 or 24 hours(?). just as a suggestion.
+                // at the moment this part doesn't get verified, requests are always valid.
 		//if (false) {
 		//	// check timestamp of request
 		//	Date timestamp = s3Request.getTimestamp();
@@ -165,9 +170,7 @@ public class S3Authenticator implements Authenticator {
 		String signature = keys[1];
 		String calculatedSignature = "";
 		String accessKeyId = keys[0];
-		//String secretAccessKey = userDirectory
-		//		.getAwsSecretAccessKey(accessKeyId);
-                String secretAccessKey="aGJSBPY5Cbafhb5UPKlbNRluXlFj9JIVqFx103w2";
+		String secretAccessKey = userDirectory.getAwsSecretAccessKey(accessKeyId);
 
                 // deactivated by s0525775
 		//try {
@@ -184,6 +187,7 @@ public class S3Authenticator implements Authenticator {
 		//	throw new InvalidSecurityException(e);
 		//}
                 
+                // changed by s0525775, the following two comment lines aren't real code.
                 // Signature = Base64(HMAC-SHA1(secretAccessKey, UTF-8-Encoding-Of(stringToSign)));
                 // Authorization = "AWS" + " " + AWSAccessKeyId + ":" + Signature;
 
@@ -209,9 +213,8 @@ public class S3Authenticator implements Authenticator {
 
                 // changed by s0525775
 		if (calculatedSignature.equals(signature)) {
-                    // authenticated! needs to get verified
-                    return new CanonicalUser("ggg");
-                    //return userDirectory.getCanonicalUser("aGJSBPY5Cbafhb5UPKlbNRluXlFj9JIVqFx103w2");
+                    // authenticated!
+                    return userDirectory.getCanonicalUser(accessKeyId);
 		} else {
                     throw new SignatureDoesNotMatchException(
 			"Provided signature doesn't match calculated value");
@@ -362,9 +365,12 @@ public class S3Authenticator implements Authenticator {
                     resource += "?" + getQueryString(request.getQueryString());
                 }
                 
-                // formats the ressource String so that it can't be "//".
+                // formats the ressource String so that it can't be "//" or only "?".
                 if (resource.startsWith("/")) {
                     resource = resource.substring(1, resource.length());
+                    if (resource.contentEquals("?")) {
+                        resource = "";
+                    }
                 }
                 resHeader = bucket + "/" + resource;
                 
