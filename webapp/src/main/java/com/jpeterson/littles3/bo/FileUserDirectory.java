@@ -110,4 +110,5 @@ public class FileUserDirectory implements UserDirectory {
 	public void setConfiguration(Configuration configuration) {
 		this.configuration = configuration;
 	}
+
 }

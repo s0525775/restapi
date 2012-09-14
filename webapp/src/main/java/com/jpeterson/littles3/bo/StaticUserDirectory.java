@@ -37,13 +37,7 @@ public class StaticUserDirectory implements UserDirectory {
          * @return 
          */
 	public String getAwsSecretAccessKey(String awsAccessKeyId) {
-            
-            if (awsAccessKeyId != null && !awsAccessKeyId.isEmpty()) {
-                return directory.getString("SK_" + awsAccessKeyId);
-            } else {
-                return null;
-            }
-            
+            return directory.getString("SK_" + awsAccessKeyId);            
 	}
 
         /**
@@ -52,8 +46,11 @@ public class StaticUserDirectory implements UserDirectory {
          * @return 
          */
         public CanonicalUser getCanonicalUser(String awsAccessKeyId) {
-            
-            return new CanonicalUser(awsAccessKeyId);
+            CanonicalUser user = new CanonicalUser(awsAccessKeyId);
+            if (directory.getString("DN_" + awsAccessKeyId) != null) {
+                user.setDisplayName(directory.getString("DN_" + awsAccessKeyId));
+            }
+            return user;
         }
 
 }

@@ -42,6 +42,8 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.PropertiesConfiguration;
 
 /**
  * Performs Amazon S3 Authentication.
@@ -267,11 +269,10 @@ public class S3Authenticator implements Authenticator {
 	 * @return The method of the request.
 	 * @see #HEADER_HTTP_METHOD_OVERRIDE
 	 */
-	public static String getAmzHeaders(HttpServletRequest request) {
+	public static String getAmzHeaders(HttpServletRequest request) {  //still untested
             String amzHeaders = "";
-            /*
-                
-                List<String> amzHeadersList = new ArrayList<String>();
+
+            List<String> amzHeadersList = new ArrayList<String>();
                 amzHeadersList.clear();
                 
                 for (Enumeration e1 = request.getHeaderNames(); e1.hasMoreElements();) {
@@ -300,8 +301,6 @@ public class S3Authenticator implements Authenticator {
                     amzHeaders = amzHeaders.substring(0, amzHeaders.length()-1);
                 }
                 
-                */
-                amzHeaders = "";
 		return amzHeaders;
 	}
 

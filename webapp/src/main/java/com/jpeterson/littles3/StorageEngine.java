@@ -113,7 +113,7 @@ public class StorageEngine extends FrameworkServlet {
 	private ETag eTag;
 
 	private Configuration configuration;
-
+        
 	private static SimpleDateFormat iso8601 = new SimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
 
@@ -627,6 +627,7 @@ public class StorageEngine extends FrameworkServlet {
 				return;
 			} else {
 				// operation on the service
+                                
 				StorageService storageService;
 				List buckets;
 
@@ -636,14 +637,20 @@ public class StorageEngine extends FrameworkServlet {
 				buckets = storageService.findBuckets("");
 
 				StringBuffer buffer = new StringBuffer();
+                                String userId = or.getRequestor().getId();
+                                String displayName = or.getRequestor().getDisplayName();
 
                                 // changed by s0525775
 				buffer.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
 				buffer
 						.append("<ListAllMyBucketsResult xmlns=\"http://doc.s3.amazonaws.com/2006-03-01/\">");
 				buffer.append("<Owner>");
-				buffer.append("<ID>ggg</ID>"); // TODO: implement
-				buffer.append("<DisplayName>ggg</DisplayName>"); // TODO: implementF
+				buffer.append("<ID>"); // TODO: implement
+				buffer.append(userId); // TODO: implement
+				buffer.append("</ID>"); // TODO: implement
+				buffer.append("<DisplayName>"); // TODO: implementF
+				buffer.append(displayName); // TODO: implementF
+				buffer.append("</DisplayName>"); // TODO: implementF
 				buffer.append("</Owner>");
 				buffer.append("<Buckets>");
 				for (Iterator iter = buckets.iterator(); iter.hasNext();) {
@@ -730,9 +737,8 @@ public class StorageEngine extends FrameworkServlet {
 
                         //added by s0525775
                         String file = "/tmp/testlog.txt";
-                        String text = "REQUEST:\r\n" + req.getHeaderNames().toString() + "\r\n\r\n";
-                        text += "AUTHHEADER:\r\n" + req.getHeader("Authorization").toString() + "\r\n\r\n";
-                        text += "S3OR:\r\n" + or.toString() + "\r\n\r\n";
+                        String text = "AUTHHEADER:\r\n" + req.getHeader("Authorization").toString() + "\r\n";
+                        text += "S3OR:\r\n" + or.toString() + "\r\n";
                         text += "-----------------------\r\n\r\n";
                         FSLogger.writeLog(file, text);
 
@@ -1070,8 +1076,8 @@ public class StorageEngine extends FrameworkServlet {
                 
                 //added by s0525775
                 String file = "/tmp/testlog.txt";
-                String text = "REQUEST:\r\n" + req.getHeaderNames().toString() + "\r\n\r\n";
-                text += "S3OR:\r\n" + or.toString() + "\r\n\r\n";
+                String text = "AUTHHEADER:\r\n" + req.getHeader("Authorization").toString() + "\r\n";
+                text += "S3OR:\r\n" + or.toString() + "\r\n";
                 text += "-----------------------\r\n\r\n";
                 FSLogger.writeLog(file, text);
 

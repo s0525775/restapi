@@ -48,6 +48,8 @@ public class S3ObjectRequest {
 	private String key;
 
 	private CanonicalUser requestor;
+        
+        private String awsAccessKeyId;
 
 	private String stringToSign;
 
@@ -350,6 +352,15 @@ public class S3ObjectRequest {
 	 */
 	public CanonicalUser getRequestor() {
 		return requestor;
+	}
+        
+        /**
+	* Get the principal who made the request.
+	* 
+	* @return The principal who made the request.
+	*/
+	public String getAwsAccessKeyId() {
+		return awsAccessKeyId;
 	}
 
 	/**
