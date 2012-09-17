@@ -36,6 +36,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.security.SignatureException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
@@ -199,19 +200,21 @@ public class S3Authenticator implements Authenticator {
                     Logger.getLogger(S3Authenticator.class.getName()).log(Level.SEVERE, null, ex);
                 }
 
+                // Output in IDE
 		System.out.println("-----------------");
 		System.out.println("stringToSign: " + stringToSign);
 		System.out.println("signature: " + signature);
 		System.out.println("calculatedSignature: " + calculatedSignature);
 		System.out.println("-----------------");
                 
-                String file2 = "/tmp/testlog.txt";
-		String text2 = "-----------------\r\n";
-		text2 += "stringToSign: \r\n>>" + stringToSign + "<<\r\n";
-		text2 += "ClientSignature: " + signature + "\r\n";
-		text2 += "ServerSignature: " + calculatedSignature + "\r\n";
-		text2 += "-----------------\r\n\r\n";
-                FSLogger.writeLog(file2, text2);
+                // Output for later if you haven't an IDE, just for tests
+                String file1 = "/tmp/testlog.txt";
+		String text1 = "-----------------\r\n";
+		text1 += "stringToSign: \r\n>>" + stringToSign + "<<\r\n";
+		text1 += "ClientSignature: " + signature + "\r\n";
+		text1 += "ServerSignature: " + calculatedSignature + "\r\n";
+		text1 += "-----------------\r\n\r\n";
+                FSLogger.writeLog(file1, text1);
 
                 // changed by s0525775
 		if (calculatedSignature.equals(signature)) {
@@ -270,33 +273,44 @@ public class S3Authenticator implements Authenticator {
 	 * @see #HEADER_HTTP_METHOD_OVERRIDE
 	 */
 	public static String getAmzHeaders(HttpServletRequest request) {  //still untested
-            String amzHeaders = "";
+                String amzHeaders = "";
 
-            List<String> amzHeadersList = new ArrayList<String>();
+                List<String> amzHeadersList = new ArrayList<String>();
                 amzHeadersList.clear();
                 
                 for (Enumeration e1 = request.getHeaderNames(); e1.hasMoreElements();) {
+                    // regarding to the Amazon rules, the Amazon headers shall be lower case 
                     String amzHeader = e1.nextElement().toString().toLowerCase();
-                            
-                    if (amzHeader.equalsIgnoreCase("x-amz-")) {
-                        String itemList = amzHeader.split(":")[0] + ":";
-
-                        for (Enumeration e2 = request.getHeaders(amzHeader); e2.hasMoreElements();) {
-                            String element = e1.nextElement().toString().toLowerCase().replace(" ", "").trim();
-                            String amzHeaderName = element.split(":")[0];
-                            itemList += element.replace(amzHeaderName, "").replace(":", "") + ",";
-                        }
                         
+                    // searches for all Amazon headers and their values
+                    if (amzHeader.equalsIgnoreCase("x-amz-")) {
+                        String itemList = "";
+                        itemList += amzHeader;
+                        itemList += ":";
+
+                        // regarding to the Amazon rules, the values of equal Amazon headers  
+                        // shall get put together, seperated by commas
+                        for (Enumeration e2 = request.getHeaders(amzHeader); e2.hasMoreElements();) {
+                            String element = e1.nextElement().toString().toLowerCase().trim();
+                            String amzHeaderName = "";
+                            itemList += element.replace(amzHeaderName, "");
+                            itemList += ",";
+                        }
+                        // removes the last comma and adds everything to a list
                         amzHeadersList.add(itemList.substring(0, itemList.length()-1));
                     }
                 }
                 
+                // regarding to the Amazon rules, the Amazon headers shall be 
+                // lexicographically sorted 
                 sortStringList(amzHeadersList);
                 
+                // converts the sorted list into a string after it got sorted
                 for (String element : amzHeadersList) {
                     amzHeaders += element + "\n";
                 }
                 
+                // removes the last return
                 if (!amzHeaders.isEmpty()) {
                     amzHeaders = amzHeaders.substring(0, amzHeaders.length()-1);
                 }
@@ -326,10 +340,11 @@ public class S3Authenticator implements Authenticator {
                 // decides if path related or virtual host related 
                 // and gets the bucket name if virtual host related
                 if (hostHeader != null) {
-                    // a bit complex, but split()[0] didn't work here, but substring
-                    if (hostHeader.indexOf('/') > 0) { //in this order
+                    if (hostHeader.indexOf('/') > 0) {  // in this order
+                        // path related
                         bucket = "";
                     } else if (hostHeader.indexOf('.') > 0) {
+                        // virtual host related
                         bucket += "/" + hostHeader.substring(0, hostHeader.indexOf('.'));
                     }
                 }
@@ -337,8 +352,8 @@ public class S3Authenticator implements Authenticator {
                 // tries to get the ressource
                 // and gets the bucket name if path related
                 if (method != null) {
-                    if (method.contains(" ")) {
-                        resource += method.split(" ")[1];
+                    if (method.indexOf(' ') > 0) {
+                        resource += method.substring(0, method.indexOf(' '));
                     }
 		} else {
                     resource += request.getRequestURI();
@@ -376,27 +391,72 @@ public class S3Authenticator implements Authenticator {
 		return resHeader;
 	}        
         
-        //Handle query string
         /**
+         * Returns the HTTP method of the request. Implements logic to allow an
+	 * "override" method, specified by the header
+	 * <code>HEADER_HTTP_METHOD_OVERRIDE</code>. If the override method is
+	 * provided, it takes precedence over the actual method derived from
+	 * <code>request.getMethod()</code>. 
          * 
          * @param tmpQueryString
          * @return 
          */
-        public static String getQueryString(String tmpQueryString) {
-            String queryString = "";
-            boolean result = false;
-            String sArray[] = new String[]{"acl","lifecycle","location","logging","notification",
-                "partnumber","policy","requestpayment","torrent","uploadid","uploads","versionid",
-                "versioning","versions","website"};
-            for (int i = 0; i < sArray.length; i++) {
-                if (tmpQueryString.toLowerCase().startsWith(sArray[i])) {
-                    result = true;
+        public static String getQueryString(String tmpQueryString) {  //still untested
+                String queryString = "";
+                String tQueryString = "";
+                List<String> tmpList = new ArrayList<String>();
+                tmpList.clear();
+
+                // for the later signature the following keys in sArray must be case sensitive
+                // otherwise the signature will be wrong; only those keys will be accepted
+                String sArray[] = new String[]{"acl","lifecycle","location","logging","notification",
+                    "partNumber","policy","requestPayment","torrent","uploadId","uploads","versionId",
+                    "versioning","versions","website"};
+
+                // removes "?" from the Query string, it will be added later again
+                tmpQueryString = tmpQueryString.replace("?", "");
+
+                // splits the Query string so that it can get lexicographically sorted later
+                String tmpArray[] = tmpQueryString.split("&");
+
+                if (tmpArray.length > 0) {
+                    // accepts a known key, even if it is case insensitive; ignores unknown keys
+                    for (int i = 0; i < tmpArray.length; i++) {
+                        for (int j = 0; j < sArray.length; j++) {
+                            if (tmpArray[i].toLowerCase().contains(sArray[j].toLowerCase())) {
+                                // splits the value from the key
+                                String keyVal[] = tmpArray[i].split("=");
+                                if (keyVal.length > 1) {
+                                    // replaces the old key (case sensitive or not) 
+                                    // by the case sensitive key
+                                    String tmpListVal = sArray[i] + "=" + keyVal[1]; 
+                                    // adds the new key and value to a list
+                                    tmpList.add(tmpListVal);
+                                }
+                            }
+                        }
+                    }
                 }
-            }
-            if (result) {
-                queryString = "?" + tmpQueryString;
-            }
-            return queryString;
+            
+                // sorts the list lexicographically
+                if (!tmpList.isEmpty()) {
+                    sortStringList(tmpList);
+                }
+                // converts the lexicographically sorted list into a 
+                // lexicographically sorted string
+                for (String element : tmpList) {
+                    tQueryString += element + "&";
+                }
+                // removes the last "&" from the string
+                if (!tQueryString.isEmpty()) {
+                    tQueryString = tQueryString.substring(0, tQueryString.length()-1);
+                }
+                // adds a "?" in front of the new validated Query string
+                if (!tQueryString.isEmpty()) {
+                    queryString = "?" + tQueryString;
+                }
+            
+                return queryString;
         }
         
         /**
@@ -423,15 +483,14 @@ public class S3Authenticator implements Authenticator {
 	}
         
 	/**
-	 * Set the <code>UserDirectory</code> for accessing user information for
-	 * authentication.
+	 * Sorts a String list lexicographically and case insensitive.
 	 * 
-	 * @param userDirectory
+	 * @param strings
 	 *            The <code>UserDirectory</code> for accessing user information
 	 *            for authentication.
 	 */
         private static void sortStringList(List<String> strings){
-            Collections.sort(strings, String.CASE_INSENSITIVE_ORDER);
+                Collections.sort(strings, String.CASE_INSENSITIVE_ORDER);
         }
         
 }
