@@ -33,7 +33,9 @@ import com.jpeterson.littles3.S3ObjectRequest;
 import de.desy.dcache.s3.Signature;
 import de.desy.dcache.temp.FSLogger;
 import java.io.UnsupportedEncodingException;
+import java.net.InetAddress;
 import java.net.URLEncoder;
+import java.net.UnknownHostException;
 import java.security.SignatureException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -43,8 +45,11 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 /**
  * Performs Amazon S3 Authentication.
@@ -59,12 +64,42 @@ public class S3Authenticator implements Authenticator {
 	private static final String AUTHORIZATION_TYPE = "AWS";
 
 	private UserDirectory userDirectory;
+        
+        private Log logger;
+        
+        private Configuration configuration;
+        
+	/**
+	 * Default configuration file name.
+	 */
+	public static final String DEFAULT_CONFIGURATION = "StorageEngine.properties";
+
+        /**
+	 * Configuration property defining the HTTP Host that this engine is
+	 * serving.
+	 */
+	public static final String CONFIG_HOST = "host";
+
+	/**
+	 * This token can be used in a <code>CONFIG_HOST</code> for the local host.
+	 * It is resolved via
+	 * <code>InetAddress.getLocalHost().getCanonicalHostName()</code>.
+	 */
+	public static final String CONFIG_HOST_TOKEN_RESOLVED_LOCAL_HOST = "$resolvedLocalHost$";
 
 	/**
 	 * Empty constructor.
 	 */
 	public S3Authenticator() {
-
+                logger = LogFactory.getLog(this.getClass());
+		try {
+			configuration = new PropertiesConfiguration(DEFAULT_CONFIGURATION);
+		} catch (ConfigurationException e) {
+			logger
+					.warn("Unable to load default properties-based configuration: "
+							+ DEFAULT_CONFIGURATION);
+			configuration = new PropertiesConfiguration();
+		}
 	}
 
 	/**
@@ -272,7 +307,7 @@ public class S3Authenticator implements Authenticator {
 	 * @return The method of the request.
 	 * @see #HEADER_HTTP_METHOD_OVERRIDE
 	 */
-	public static String getAmzHeaders(HttpServletRequest request) {  //still untested
+	public String getAmzHeaders(HttpServletRequest request) {  //still untested
                 String amzHeaders = "";
 
                 List<String> amzHeadersList = new ArrayList<String>();
@@ -330,15 +365,17 @@ public class S3Authenticator implements Authenticator {
 	 * @return The method of the request.
 	 * @see #HEADER_HTTP_METHOD_OVERRIDE
 	 */
-	public static String getResHeaders(HttpServletRequest request) {
+	public String getResHeaders(HttpServletRequest request) {
                 String resHeader = "";
                 String bucket = "";
                 String resource = "";
 		String method = request.getHeader(HEADER_HTTP_METHOD_OVERRIDE);
-                String hostHeader = request.getHeader("Host");
+                String hostHeader = request.getHeader("Host").toLowerCase();
+                String host = resolvedHost().toLowerCase();
                 
                 // decides if path related or virtual host related 
                 // and gets the bucket name if virtual host related
+                hostHeader = hostHeader.replace(host, "");
                 if (hostHeader != null) {
                     if (hostHeader.indexOf('/') > 0) {  // in this order
                         // path related
@@ -349,6 +386,14 @@ public class S3Authenticator implements Authenticator {
                     }
                 }
                 
+                // Output for later if you haven't an IDE, just for tests
+                String file1 = "/tmp/testlog.txt";
+		String text1 = "-----------------\r\n";
+		text1 += "host: \r\n>>" + host + "<<\r\n";
+		text1 += "hostHeader: " + hostHeader + "\r\n";
+		text1 += "-----------------\r\n\r\n";
+                FSLogger.writeLog(file1, text1);
+
                 // tries to get the ressource
                 // and gets the bucket name if path related
                 if (method != null) {
@@ -401,7 +446,7 @@ public class S3Authenticator implements Authenticator {
          * @param tmpQueryString
          * @return 
          */
-        public static String getQueryString(String tmpQueryString) {  //still untested
+        public String getQueryString(String tmpQueryString) {  //still untested
                 String queryString = "";
                 String tQueryString = "";
                 List<String> tmpList = new ArrayList<String>();
@@ -489,8 +534,44 @@ public class S3Authenticator implements Authenticator {
 	 *            The <code>UserDirectory</code> for accessing user information
 	 *            for authentication.
 	 */
-        private static void sortStringList(List<String> strings){
+        private void sortStringList(List<String> strings){
                 Collections.sort(strings, String.CASE_INSENSITIVE_ORDER);
         }
         
+	/**
+	 * Resolves the configured host name, replacing any tokens in the configured
+	 * host name value.
+	 * 
+	 * @return The configured host name after any tokens have been replaced.
+	 * @see #CONFIG_HOST
+	 * @see #CONFIG_HOST_TOKEN_RESOLVED_LOCAL_HOST
+	 */
+	public String resolvedHost() {
+		String configHost;
+
+		configHost = configuration.getString(CONFIG_HOST);
+		logger.debug("configHost: " + configHost);
+
+		if (configHost.indexOf(CONFIG_HOST_TOKEN_RESOLVED_LOCAL_HOST) >= 0) {
+			InetAddress localHost;
+			String resolvedLocalHost = "localhost";
+
+			try {
+				localHost = InetAddress.getLocalHost();
+				resolvedLocalHost = localHost.getCanonicalHostName();
+			} catch (UnknownHostException e) {
+				logger.fatal("Unable to resolve local host", e);
+			}
+
+			configHost = configHost.replace(
+					CONFIG_HOST_TOKEN_RESOLVED_LOCAL_HOST, resolvedLocalHost);
+		}
+
+                // changed by s0525775
+                if (configHost.indexOf(':') > 0) {
+                    configHost = configHost.substring(0, configHost.indexOf(':'));
+                }
+                
+		return configHost;
+	}
 }
