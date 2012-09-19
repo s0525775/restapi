@@ -53,8 +53,7 @@ public class FileStorageServiceImpl extends FileBase implements StorageService {
 	}
 
 	public S3Object createS3Object(Bucket bucket, String key,
-			CanonicalUser owner) /*throws IOException*/ {
-                        /*
+			CanonicalUser owner) throws IOException {
 		String guid;
 		File storageFile;
 		Acp acp;
@@ -84,12 +83,10 @@ public class FileStorageServiceImpl extends FileBase implements StorageService {
 				.toURL());
 		s3Object.setAcp(acp);
 		return s3Object;
-                */
-                return null;
 	}
 
 	public S3Object load(String bucket, String key) throws DataAccessException {
-		S3Object object = s3ObjectDao.loadS3Object(bucket, key);
+                        S3Object object = s3ObjectDao.loadS3Object(bucket, key);
 
 		return object;
 	}
@@ -115,7 +112,6 @@ public class FileStorageServiceImpl extends FileBase implements StorageService {
 
 	public Bucket createBucket(String name, CanonicalUser owner)
 			throws IOException {
-                      /*
                 File bucketDirectory;
 		Acp acp;
 		Bucket bucket;
@@ -139,16 +135,7 @@ public class FileStorageServiceImpl extends FileBase implements StorageService {
 		bucket.setName(name);
 		bucket.setCreated(new Date());
 
-                // added by s0525775
-                String file = "/tmp/test.txt";
-                bucketDao.writeString(file, acp.getOwner().toString());
-                bucketDao.writeString(file, "\n\n");
-                bucketDao.writeString(file, bucket.toString());
-                bucketDao.writeString(file, "\n\n");
-
 		return bucket;
-                */
-                return null;
 	}
 
 	public Bucket loadBucket(String name) throws DataAccessException {
@@ -156,7 +143,6 @@ public class FileStorageServiceImpl extends FileBase implements StorageService {
 	}
 
 	public void storeBucket(Bucket bucket) throws DataAccessException {
-                /*
 		Acp acp;
 
 		acp = bucket.getAcp();
@@ -166,13 +152,6 @@ public class FileStorageServiceImpl extends FileBase implements StorageService {
 		}
 
 		bucketDao.storeBucket(bucket);
-                // added by s0525775
-                String file = "/tmp/test.txt";
-                bucketDao.writeString(file, acp.getOwner().toString());
-                bucketDao.writeString(file, "\n\n");
-                bucketDao.writeString(file, bucket.toString());
-                bucketDao.writeString(file, "\n\n");
-                */
  	}
 
 	public void deleteBucket(Bucket bucket) throws IOException {

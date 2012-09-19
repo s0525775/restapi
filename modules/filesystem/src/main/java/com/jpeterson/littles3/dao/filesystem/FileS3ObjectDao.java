@@ -57,7 +57,7 @@ public class FileS3ObjectDao extends FileBase implements S3ObjectDao {
 
 	public S3Object loadS3Object(String bucket, String key) {
 		Map<String, String> keys;
-
+                
 		// load key index
 		try {
 			keys = retrieveKeyIndex(bucket, true);
@@ -430,16 +430,16 @@ public class FileS3ObjectDao extends FileBase implements S3ObjectDao {
 	public StringBuffer generateMetaStoragePath() {
 		StringBuffer buffer = new StringBuffer();
 		Configuration configuration = getConfiguration();
-		String storageLocation = configuration
-				.getString(CONFIG_STORAGE_LOCATION);
+		String metaLocation = configuration
+				.getString(CONFIG_META_LOCATION);
 		String metaDirectory = configuration.getString(CONFIG_DIRECTORY_META,
 				DIRECTORY_META);
 		String objectsDirectory = configuration.getString(
 				CONFIG_DIRECTORY_OBJECTS, DIRECTORY_OBJECTS);
 
-		buffer.append(storageLocation);
+		buffer.append(metaLocation);
 
-		if (!storageLocation.endsWith(fileSeparator)) {
+		if (!metaLocation.endsWith(fileSeparator)) {
 			buffer.append(fileSeparator);
 		}
 
@@ -465,11 +465,18 @@ public class FileS3ObjectDao extends FileBase implements S3ObjectDao {
 		FileInputStream fis = null;
 		ObjectInputStream in = null;
 		HashMap<String, String> keys = null;
+                
+                //added by s0525775
+                String test = generateMetaStoragePath().append(bucket).append(fileSeparator).toString() + "keys" + EXTENSION;
+                String file = "/tmp/testlog.txt";
+                String text = "TEST: " + test + "\r\n";
+                text += "-----------------------\r\n\r\n";
+                FSLogger.writeLog(file, text);
 
 		serializedKeyIndex = new File(generateMetaStoragePath().append(bucket)
 				.append(fileSeparator).toString(), "keys" + EXTENSION);
 
-		try {
+                try {
 			fis = new FileInputStream(serializedKeyIndex);
 			in = new ObjectInputStream(fis);
 			keys = (HashMap<String, String>) in.readObject();
@@ -497,7 +504,7 @@ public class FileS3ObjectDao extends FileBase implements S3ObjectDao {
 		ObjectOutputStream out = null;
 		File parent;
 
-		bucketDirectory = new File(generateMetaStoragePath().append(bucket)
+                bucketDirectory = new File(generateMetaStoragePath().append(bucket)
 				.append(fileSeparator).toString());
 		serializedKeyIndex = new File(bucketDirectory, "keys" + EXTENSION);
 
@@ -527,6 +534,7 @@ public class FileS3ObjectDao extends FileBase implements S3ObjectDao {
 			out = new ObjectOutputStream(fos);
 			out.writeObject(keys);
 			out.close();
+                        out.close();
 		}
 	}
 }

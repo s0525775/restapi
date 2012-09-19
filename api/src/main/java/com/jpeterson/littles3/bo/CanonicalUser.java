@@ -17,6 +17,10 @@
 package com.jpeterson.littles3.bo;
 
 import java.io.Serializable;
+import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.logging.Log;
 
 /**
  * Represents an S3 canonical user used in S3 access control.
@@ -37,7 +41,7 @@ public class CanonicalUser implements Grantee, Serializable {
 	/**
 	 * "Special" id that indicates the anonymous user id.
 	 */
-	public static final String ID_ANONYMOUS = "http://www.jpeterson.com/canonicalUser/anonymous";
+	public static final String ID_ANONYMOUS = "http://www.dcache.org/canonicalUser/anonymous";
 
 	/**
 	 * Basic constructor.

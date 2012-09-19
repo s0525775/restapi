@@ -56,8 +56,5 @@ public interface BucketDao {
 	 *             Unable to remove the S3 bucket.
 	 */
 	public void removeBucket(Bucket bucket) throws DataAccessException;
-        
-        // added by s0525775
-        public void writeString(String filepath, String text) throws DataAccessException;
-        
+               
 }

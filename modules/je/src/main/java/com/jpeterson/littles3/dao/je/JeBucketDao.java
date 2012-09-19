@@ -148,4 +148,5 @@ public class JeBucketDao implements BucketDao {
 	public void setJeCentral(JeCentral jeCentral) {
 		this.jeCentral = jeCentral;
 	}
+
 }

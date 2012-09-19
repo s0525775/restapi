@@ -284,6 +284,9 @@ public class S3Authenticator implements Authenticator {
                 if (method.equalsIgnoreCase("GET")) {
                     // read
                     HTTPverb = "GET"; 
+                } else if (method.equalsIgnoreCase("HEAD")) {
+                    // read
+                    HTTPverb = "HEAD"; 
                 } else if (method.equalsIgnoreCase("PUT")) {
                     // create
                     HTTPverb = "PUT";

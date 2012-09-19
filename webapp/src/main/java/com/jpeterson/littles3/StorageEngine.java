@@ -737,8 +737,8 @@ public class StorageEngine extends FrameworkServlet {
 
                         //added by s0525775
                         String file = "/tmp/testlog.txt";
-                        String text = "AUTHHEADER:\r\n" + req.getHeader("Authorization").toString() + "\r\n";
-                        text += "S3OR:\r\n" + or.toString() + "\r\n";
+                        String text = "AUTHHEADER:" + req.getHeader("Authorization").toString() + "\r\n";
+                        text += "S3OR:" + or.toString() + "\r\n";
                         text += "-----------------------\r\n\r\n";
                         FSLogger.writeLog(file, text);
 

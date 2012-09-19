@@ -5,7 +5,9 @@ import org.apache.commons.configuration.Configuration;
 public abstract class FileBase {
 	public static final String CONFIG_STORAGE_LOCATION = "storageLocation";
 
-	public static final String CONFIG_DIRECTORY_BUCKETS = "dir.buckets";
+	public static final String CONFIG_META_LOCATION = "metaLocation";
+
+        public static final String CONFIG_DIRECTORY_BUCKETS = "dir.buckets";
 
 	public static final String CONFIG_DIRECTORY_META = "dir.meta";
 
@@ -87,14 +89,14 @@ public abstract class FileBase {
 	public StringBuffer generateBucketMetaPath() {
 		StringBuffer buffer = new StringBuffer();
 		Configuration configuration = getConfiguration();
-		String storageLocation = configuration
-				.getString(CONFIG_STORAGE_LOCATION);
+		String metaLocation = configuration
+				.getString(CONFIG_META_LOCATION);
 		String bucketDirectory = configuration.getString(CONFIG_DIRECTORY_META,
 				DIRECTORY_META);
 
-		buffer.append(storageLocation);
+		buffer.append(metaLocation);
 
-		if (!storageLocation.endsWith(fileSeparator)) {
+		if (!metaLocation.endsWith(fileSeparator)) {
 			buffer.append(fileSeparator);
 		}
 

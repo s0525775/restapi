@@ -103,12 +103,12 @@
     -->
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>littleS3-api</artifactId>
+      <artifactId>littleS3-filesystem</artifactId>
       <version>2.1.0</version>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>littleS3-filesystem</artifactId>
+      <artifactId>littleS3-api</artifactId>
       <version>2.1.0</version>
     </dependency>
     <dependency>

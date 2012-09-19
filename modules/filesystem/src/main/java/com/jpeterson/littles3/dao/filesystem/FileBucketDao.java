@@ -165,7 +165,7 @@ public class FileBucketDao extends FileBase implements BucketDao {
 		StringBuffer buffer = new StringBuffer();
 		Configuration configuration = getConfiguration();
 		String storageLocation = configuration
-				.getString(CONFIG_STORAGE_LOCATION);
+				.getString(CONFIG_META_LOCATION);
 		String metaDirectory = configuration.getString(CONFIG_DIRECTORY_META,
 				DIRECTORY_META);
 		String bucketsDirectory = configuration.getString(
@@ -191,25 +191,5 @@ public class FileBucketDao extends FileBase implements BucketDao {
 
 		return buffer;
 	}
-        
-        //added by s0525775
-        public void writeString(String filepath, String text) throws DataAccessException {
-		File tmpFile;
-		FileOutputStream fos = null;
-		ObjectOutputStream out = null;
-
-		// create bucket meta storage directory if necessary
-		tmpFile = new File(filepath);
-
-		try {
-			fos = new FileOutputStream(tmpFile, true);
-			out = new ObjectOutputStream(fos);
-			out.writeChars(text);
-			out.close();
-		} catch (IOException e) {
-			throw new DataAccessResourceFailureException(
-					"Error while writing tmpFile.", e);
-		}
-	}
-        
+                
 }
