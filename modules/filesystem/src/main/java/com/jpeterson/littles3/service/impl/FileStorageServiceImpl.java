@@ -36,6 +36,7 @@ import com.jpeterson.littles3.bo.ResourcePermission;
 import com.jpeterson.littles3.bo.S3Object;
 import com.jpeterson.littles3.dao.BucketDao;
 import com.jpeterson.littles3.dao.S3ObjectDao;
+import com.jpeterson.littles3.dao.filesystem.FSLogger;
 import com.jpeterson.littles3.dao.filesystem.FileBase;
 import com.jpeterson.littles3.service.BucketAlreadyExistsException;
 import com.jpeterson.littles3.service.BucketNotEmptyException;
@@ -106,7 +107,12 @@ public class FileStorageServiceImpl extends FileBase implements StorageService {
 	}
 
 	public void remove(S3Object s3Object) throws DataAccessException {
-		s3ObjectDao.removeS3Object(s3Object);
+                // Output for later if you haven't an IDE, just for tests
+                String file1 = "/tmp/testlog.txt";
+		String text1 = "TEST0\r\n";
+                FSLogger.writeLog(file1, text1);
+
+                s3ObjectDao.removeS3Object(s3Object);
 		s3Object.deleteData();
 	}
 
@@ -155,7 +161,7 @@ public class FileStorageServiceImpl extends FileBase implements StorageService {
  	}
 
 	public void deleteBucket(Bucket bucket) throws IOException {
-		File bucketDirectory;
+                File bucketDirectory;
 
 		logger.debug("Request to delete bucket: " + bucket.getName());
 

@@ -1,4 +1,4 @@
 -------------------------------------------------------------------------------
 Test set: com.jpeterson.littles3.bo.FileS3ObjectTest
 -------------------------------------------------------------------------------
-Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.201 sec
+Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.183 sec

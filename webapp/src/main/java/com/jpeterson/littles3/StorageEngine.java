@@ -1077,13 +1077,20 @@ public class StorageEngine extends FrameworkServlet {
                 //added by s0525775
                 String file = "/tmp/testlog.txt";
                 String text = "AUTHHEADER:\r\n" + req.getHeader("Authorization").toString() + "\r\n";
-                text += "S3OR:\r\n" + or.toString() + "\r\n";
+                text += "S3OR:\r\n" + or.getKey().toString() + "\r\n";
                 text += "-----------------------\r\n\r\n";
                 FSLogger.writeLog(file, text);
 
 		CanonicalUser requestor = or.getRequestor();
 
-		if (or.getKey() != null) {
+                //added by s0525775
+                String file2 = "/tmp/testlog.txt";
+                String text2 = "orKey: " + or.getKey().toString() + "\r\n";
+                text2 += "orKey: " + or.getKey().isEmpty() + "\r\n";
+                text2 += "-----------------------\r\n\r\n";
+                FSLogger.writeLog(file2, text2);
+
+                if (or.getKey() != null) {
 			Bucket bucket;
 			S3Object s3Object;
 			StorageService storageService;
@@ -1113,12 +1120,19 @@ public class StorageEngine extends FrameworkServlet {
 				resp.sendError(HttpServletResponse.SC_NOT_FOUND, "NoSuchKey");
 				return;
 			}
-			storageService.remove(s3Object);
+
+                        //added by s0525775
+                        String file3 = "/tmp/testlog.txt";
+                        String text3 = "orKey: " + or.getKey().toString() + "\r\n";
+                        text3 += "-----------------------\r\n\r\n";
+                        FSLogger.writeLog(file3, text3);
+
+                        storageService.remove(s3Object);
 
 			resp.setStatus(HttpServletResponse.SC_NO_CONTENT);
 			return;
 		} else if (or.getBucket() != null) {
-			StorageService storageService;
+                        StorageService storageService;
 			Bucket bucket;
 
 			// validate bucket
@@ -1154,6 +1168,11 @@ public class StorageEngine extends FrameworkServlet {
 			resp.setStatus(HttpServletResponse.SC_NO_CONTENT);
 			return;
 		}
+                //added by s0525775
+                String file4 = "/tmp/testlog.txt";
+                String text4 = "orKey: " + or.getKey().toString() + "\r\n";
+                text4 += "-----------------------\r\n\r\n";
+                FSLogger.writeLog(file4, text4);
 
 		resp.sendError(HttpServletResponse.SC_NOT_IMPLEMENTED);
 	}

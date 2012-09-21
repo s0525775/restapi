@@ -17,6 +17,8 @@ import org.springframework.dao.DataRetrievalFailureException;
 
 import com.jpeterson.littles3.bo.Bucket;
 import com.jpeterson.littles3.dao.BucketDao;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * An implementation of <code>BucketDao</code> that uses the file system to
@@ -47,7 +49,7 @@ public class FileBucketDao extends FileBase implements BucketDao {
 		ObjectInputStream in = null;
 		Bucket theBucket = null;
 
-		serializedBucketFile = new File(generateMetaStoragePath()
+		serializedBucketFile = new File(generateMetaPath()
 				.append(bucket).append(fileSeparator).append(bucket).append(
 						EXTENSION).toString());
 
@@ -80,12 +82,20 @@ public class FileBucketDao extends FileBase implements BucketDao {
 	 */
 	public void removeBucket(Bucket bucket) throws DataAccessException {
 		File bucketDirectory;
+		File bucketDirectory2;
 		File serializedBucketFile;
+                
+                // Output for later if you haven't an IDE, just for tests
+                String file1 = "/tmp/testlog.txt";
+		String text1 = "TEST1\r\n";
+                FSLogger.writeLog(file1, text1);
 
-		bucketDirectory = new File(generateMetaStoragePath().append(
+		bucketDirectory = new File(generateStoragePath().append(
+				bucket.getName()).append(fileSeparator).toString());
+		bucketDirectory2 = new File(generateMetaPath().append(
 				bucket.getName()).append(fileSeparator).toString());
 
-		serializedBucketFile = new File(bucketDirectory, bucket.getName()
+		serializedBucketFile = new File(bucketDirectory2, bucket.getName()
 				+ EXTENSION);
 
 		if (serializedBucketFile.exists()) {
@@ -100,10 +110,10 @@ public class FileBucketDao extends FileBase implements BucketDao {
 			String[] files = bucketDirectory.list();
 
 			if (files.length > 0) {
-				logger.debug("Bucket not empty. Number of files in directory: "
+				logger.debug("Bucket(1) not empty. Number of files in directory: "
 						+ files.length);
 				throw new DataAccessResourceFailureException(
-						"Bucket is not empty");
+						"Bucket(1) is not empty");
 			}
 
 			if (!bucketDirectory.delete()) {
@@ -113,6 +123,25 @@ public class FileBucketDao extends FileBase implements BucketDao {
 			} else {
 				// try to delete the 'buckets' directory, if empty
 				bucketDirectory.getParentFile().delete();
+			}
+		}
+		if (bucketDirectory2.exists()) {
+			String[] files = bucketDirectory2.list();
+
+			if (files.length > 0) {
+				logger.debug("Bucket(2) not empty. Number of files in directory: "
+						+ files.length);
+				throw new DataAccessResourceFailureException(
+						"Bucket(2) is not empty");
+			}
+
+			if (!bucketDirectory2.delete()) {
+				throw new DataAccessResourceFailureException(
+						"Could not delete bucket meta directory: "
+								+ bucketDirectory2);
+			} else {
+				// try to delete the 'buckets' directory, if empty
+				bucketDirectory2.getParentFile().delete();
 			}
 		}
 	}
@@ -127,23 +156,26 @@ public class FileBucketDao extends FileBase implements BucketDao {
 	 */
 	public void storeBucket(Bucket bucket) throws DataAccessException {
 		File bucketDirectory;
+		File bucketDirectory2;
 		File serializedBucketFile;
 		FileOutputStream fos = null;
 		ObjectOutputStream out = null;
 
 		// create bucket meta storage directory if necessary
-		bucketDirectory = new File(generateMetaStoragePath().append(
+		bucketDirectory = new File(generateStoragePath().append(
+				bucket.getName()).append(fileSeparator).toString());
+		bucketDirectory2 = new File(generateMetaPath().append(
 				bucket.getName()).append(fileSeparator).toString());
 
-		if (!bucketDirectory.exists()) {
-			if (!bucketDirectory.mkdirs()) {
+                if (!bucketDirectory2.exists()) {
+			if (!bucketDirectory2.mkdirs()) {
 				throw new DataAccessResourceFailureException(
 						"Could not create bucket meta directory: "
-								+ bucketDirectory);
+								+ bucketDirectory2);
 			}
 		}
 
-		serializedBucketFile = new File(bucketDirectory, bucket.getName()
+		serializedBucketFile = new File(bucketDirectory2, bucket.getName()
 				+ EXTENSION);
 
 		try {
@@ -161,7 +193,42 @@ public class FileBucketDao extends FileBase implements BucketDao {
 	 * 
 	 * @return Example: C:/temp/StorageEngine/meta/buckets/
 	 */
-	public StringBuffer generateMetaStoragePath() {
+	public StringBuffer generateStoragePath() {
+		StringBuffer buffer = new StringBuffer();
+		Configuration configuration = getConfiguration();
+		String storageLocation = configuration
+				.getString(CONFIG_STORAGE_LOCATION);
+		String metaDirectory = configuration.getString(CONFIG_DIRECTORY_META,
+				DIRECTORY_META);
+		String bucketsDirectory = configuration.getString(
+				CONFIG_DIRECTORY_BUCKETS, DIRECTORY_BUCKETS);
+
+		buffer.append(storageLocation);
+
+		if (!storageLocation.endsWith(fileSeparator)) {
+			buffer.append(fileSeparator);
+		}
+
+		buffer.append(metaDirectory);
+
+		if (!metaDirectory.endsWith(fileSeparator)) {
+			buffer.append(fileSeparator);
+		}
+
+		buffer.append(bucketsDirectory);
+
+		if (!bucketsDirectory.endsWith(fileSeparator)) {
+			buffer.append(fileSeparator);
+		}
+
+		return buffer;
+	}
+                
+	/**
+	 * 
+	 * @return Example: C:/temp/StorageEngine/meta/buckets/
+	 */
+	public StringBuffer generateMetaPath() {
 		StringBuffer buffer = new StringBuffer();
 		Configuration configuration = getConfiguration();
 		String storageLocation = configuration
@@ -191,5 +258,4 @@ public class FileBucketDao extends FileBase implements BucketDao {
 
 		return buffer;
 	}
-                
 }
