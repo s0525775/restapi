@@ -508,7 +508,7 @@ public class FileS3ObjectDao extends FileBase implements S3ObjectDao {
 		ObjectInputStream in = null;
 		HashMap<String, String> keys = null;
                 
-		serializedKeyIndex = new File(generateMetaPath().append(bucket)
+		serializedKeyIndex = new File(generateStoragePath().append(bucket)
 				.append(fileSeparator).toString(), "keys" + EXTENSION);
 
                 try {
@@ -539,7 +539,7 @@ public class FileS3ObjectDao extends FileBase implements S3ObjectDao {
 		ObjectOutputStream out = null;
 		File parent;
 
-                bucketDirectory = new File(generateMetaPath().append(bucket)
+                bucketDirectory = new File(generateStoragePath().append(bucket)
 				.append(fileSeparator).toString());
 		serializedKeyIndex = new File(bucketDirectory, "keys" + EXTENSION);
 

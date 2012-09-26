@@ -1,0 +1,5 @@
+#surefire
+#Wed Sep 26 14:25:46 CEST 2012
+user.dir=/workspace/htw-git/restapi/webapp
+localRepository=/home/Jana/.m2/repository
+basedir=/workspace/htw-git/restapi/webapp

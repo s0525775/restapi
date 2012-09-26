@@ -1,0 +1,1 @@
+mvn install:install-file -Dfile=/workspace/je-3.2.23.jar -DgroupId=je -DartifactId=je -Dversion=3.2.23 -Dpackaging=jar

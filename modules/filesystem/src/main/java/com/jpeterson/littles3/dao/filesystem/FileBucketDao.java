@@ -49,7 +49,7 @@ public class FileBucketDao extends FileBase implements BucketDao {
 		ObjectInputStream in = null;
 		Bucket theBucket = null;
 
-		serializedBucketFile = new File(generateMetaPath()
+		serializedBucketFile = new File(generateStoragePath()
 				.append(bucket).append(fileSeparator).append(bucket).append(
 						EXTENSION).toString());
 
@@ -95,7 +95,7 @@ public class FileBucketDao extends FileBase implements BucketDao {
 		bucketDirectory2 = new File(generateMetaPath().append(
 				bucket.getName()).append(fileSeparator).toString());
 
-		serializedBucketFile = new File(bucketDirectory2, bucket.getName()
+		serializedBucketFile = new File(bucketDirectory, bucket.getName()
 				+ EXTENSION);
 
 		if (serializedBucketFile.exists()) {
@@ -125,25 +125,6 @@ public class FileBucketDao extends FileBase implements BucketDao {
 				bucketDirectory.getParentFile().delete();
 			}
 		}
-		if (bucketDirectory2.exists()) {
-			String[] files = bucketDirectory2.list();
-
-			if (files.length > 0) {
-				logger.debug("Bucket(2) not empty. Number of files in directory: "
-						+ files.length);
-				throw new DataAccessResourceFailureException(
-						"Bucket(2) is not empty");
-			}
-
-			if (!bucketDirectory2.delete()) {
-				throw new DataAccessResourceFailureException(
-						"Could not delete bucket meta directory: "
-								+ bucketDirectory2);
-			} else {
-				// try to delete the 'buckets' directory, if empty
-				bucketDirectory2.getParentFile().delete();
-			}
-		}
 	}
 
 	/**
@@ -167,15 +148,15 @@ public class FileBucketDao extends FileBase implements BucketDao {
 		bucketDirectory2 = new File(generateMetaPath().append(
 				bucket.getName()).append(fileSeparator).toString());
 
-                if (!bucketDirectory2.exists()) {
-			if (!bucketDirectory2.mkdirs()) {
+                if (!bucketDirectory.exists()) {
+			if (!bucketDirectory.mkdirs()) {
 				throw new DataAccessResourceFailureException(
 						"Could not create bucket meta directory: "
-								+ bucketDirectory2);
+								+ bucketDirectory);
 			}
 		}
 
-		serializedBucketFile = new File(bucketDirectory2, bucket.getName()
+		serializedBucketFile = new File(bucketDirectory, bucket.getName()
 				+ EXTENSION);
 
 		try {
