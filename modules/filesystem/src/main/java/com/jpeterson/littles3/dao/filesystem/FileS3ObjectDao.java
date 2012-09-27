@@ -605,6 +605,7 @@ public class FileS3ObjectDao extends FileBase implements S3ObjectDao {
 				}
 			}
 			// persist the key index
+                        serializedKeyIndex.delete();
 			fos = new FileOutputStream(serializedKeyIndex, false);
 			out = new ObjectOutputStream(fos);
 			out.writeObject(keys);
