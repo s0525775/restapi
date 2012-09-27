@@ -93,7 +93,6 @@ public class FileStorageServiceImpl extends FileBase implements StorageService {
 	}
 
 	public void store(S3Object s3Object) throws DataAccessException {
-                /*
 		Acp acp;
 
 		acp = s3Object.getAcp();
@@ -103,15 +102,9 @@ public class FileStorageServiceImpl extends FileBase implements StorageService {
 		}
 
 		s3ObjectDao.storeS3Object(s3Object);
-                */
 	}
 
 	public void remove(S3Object s3Object) throws DataAccessException {
-                // Output for later if you haven't an IDE, just for tests
-                String file1 = "/tmp/testlog.txt";
-		String text1 = "TEST0\r\n";
-                FSLogger.writeLog(file1, text1);
-
                 s3ObjectDao.removeS3Object(s3Object);
 		s3Object.deleteData();
 	}

@@ -571,7 +571,6 @@ public class FileS3ObjectDao extends FileBase implements S3ObjectDao {
 		serializedKeyIndex = new File(bucketDirectory3, "keys" + EXTENSION);
 
 		if (keys.isEmpty()) {
-                        System.out.println("TESTG1");
 			// delete any existing serialized key index
 			if (serializedKeyIndex.delete()) {
 				// delete named bucket directory, if empty
@@ -583,7 +582,6 @@ public class FileS3ObjectDao extends FileBase implements S3ObjectDao {
 				}
 			}
 		} else {
-                        System.out.println("TESTG2");
 			// create bucket meta storage directory if necessary (for Linux step by step)
 			if (!bucketDirectory1.exists()) {
 				if (!bucketDirectory1.mkdirs()) {

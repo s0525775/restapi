@@ -735,13 +735,6 @@ public class StorageEngine extends FrameworkServlet {
 			}
 			logger.debug("S3ObjectRequest: " + or);
 
-                        //added by s0525775
-                        String file = "/tmp/testlog.txt";
-                        String text = "AUTHHEADER:" + req.getHeader("Authorization").toString() + "\r\n";
-                        text += "S3OR:" + or.toString() + "\r\n";
-                        text += "-----------------------\r\n\r\n";
-                        FSLogger.writeLog(file, text);
-
 			CanonicalUser requestor = or.getRequestor();
 
 			if (or.getKey() != null) {
@@ -1074,12 +1067,6 @@ public class StorageEngine extends FrameworkServlet {
 		}
 		logger.debug("S3ObjectRequest: " + or);
                 
-                //added by s0525775
-                String file = "/tmp/testlog.txt";
-                String text = "AUTHHEADER:\r\n" + req.getHeader("Authorization").toString() + "\r\n";
-                text += "-----------------------\r\n\r\n";
-                FSLogger.writeLog(file, text);
-
 		CanonicalUser requestor = or.getRequestor();
 
                 if (or.getKey() != null) {
