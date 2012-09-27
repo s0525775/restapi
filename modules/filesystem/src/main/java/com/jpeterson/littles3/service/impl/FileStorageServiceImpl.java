@@ -87,7 +87,7 @@ public class FileStorageServiceImpl extends FileBase implements StorageService {
 	}
 
 	public S3Object load(String bucket, String key) throws DataAccessException {
-                        S3Object object = s3ObjectDao.loadS3Object(bucket, key);
+                S3Object object = s3ObjectDao.loadS3Object(bucket, key);
 
 		return object;
 	}

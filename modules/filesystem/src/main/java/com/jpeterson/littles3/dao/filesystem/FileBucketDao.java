@@ -49,7 +49,7 @@ public class FileBucketDao extends FileBase implements BucketDao {
 		ObjectInputStream in = null;
 		Bucket theBucket = null;
 
-		serializedBucketFile = new File(generateStoragePath()
+		serializedBucketFile = new File(generateMetaPath()
 				.append(bucket).append(fileSeparator).append(bucket).append(
 						EXTENSION).toString());
 
@@ -82,17 +82,9 @@ public class FileBucketDao extends FileBase implements BucketDao {
 	 */
 	public void removeBucket(Bucket bucket) throws DataAccessException {
 		File bucketDirectory;
-		File bucketDirectory2;
 		File serializedBucketFile;
                 
-                // Output for later if you haven't an IDE, just for tests
-                String file1 = "/tmp/testlog.txt";
-		String text1 = "TEST1\r\n";
-                FSLogger.writeLog(file1, text1);
-
-		bucketDirectory = new File(generateStoragePath().append(
-				bucket.getName()).append(fileSeparator).toString());
-		bucketDirectory2 = new File(generateMetaPath().append(
+		bucketDirectory = new File(generateMetaPath().append(
 				bucket.getName()).append(fileSeparator).toString());
 
 		serializedBucketFile = new File(bucketDirectory, bucket.getName()
@@ -136,27 +128,42 @@ public class FileBucketDao extends FileBase implements BucketDao {
 	 *             General failure serializing the bucket.
 	 */
 	public void storeBucket(Bucket bucket) throws DataAccessException {
-		File bucketDirectory;
+		File bucketDirectory1;
 		File bucketDirectory2;
+		File bucketDirectory3;
 		File serializedBucketFile;
 		FileOutputStream fos = null;
 		ObjectOutputStream out = null;
 
-		// create bucket meta storage directory if necessary
-		bucketDirectory = new File(generateStoragePath().append(
-				bucket.getName()).append(fileSeparator).toString());
-		bucketDirectory2 = new File(generateMetaPath().append(
+		bucketDirectory1 = new File(generateMetaMainPath().toString());
+		bucketDirectory2 = new File(generateMetaPath().toString());
+		bucketDirectory3 = new File(generateMetaPath().append(
 				bucket.getName()).append(fileSeparator).toString());
 
-                if (!bucketDirectory.exists()) {
-			if (!bucketDirectory.mkdirs()) {
+   		// create bucket meta storage directory if necessary (for Linux step by step)
+                if (!bucketDirectory1.exists()) {
+			if (!bucketDirectory1.mkdirs()) {
 				throw new DataAccessResourceFailureException(
 						"Could not create bucket meta directory: "
-								+ bucketDirectory);
+								+ bucketDirectory1);
+			}
+		}
+                if (!bucketDirectory2.exists()) {
+			if (!bucketDirectory2.mkdirs()) {
+				throw new DataAccessResourceFailureException(
+						"Could not create bucket meta directory: "
+								+ bucketDirectory2);
+			}
+		}
+                if (!bucketDirectory3.exists()) {
+			if (!bucketDirectory3.mkdirs()) {
+				throw new DataAccessResourceFailureException(
+						"Could not create bucket meta directory: "
+								+ bucketDirectory3);
 			}
 		}
 
-		serializedBucketFile = new File(bucketDirectory, bucket.getName()
+		serializedBucketFile = new File(bucketDirectory3, bucket.getName()
 				+ EXTENSION);
 
 		try {
@@ -234,6 +241,33 @@ public class FileBucketDao extends FileBase implements BucketDao {
 		buffer.append(bucketsDirectory);
 
 		if (!bucketsDirectory.endsWith(fileSeparator)) {
+			buffer.append(fileSeparator);
+		}
+
+		return buffer;
+	}
+
+        /**
+	 * 
+	 * @return Example: C:/temp/StorageEngine/meta/buckets/
+	 */
+	public StringBuffer generateMetaMainPath() {
+		StringBuffer buffer = new StringBuffer();
+		Configuration configuration = getConfiguration();
+		String storageLocation = configuration
+				.getString(CONFIG_META_LOCATION);
+		String metaDirectory = configuration.getString(CONFIG_DIRECTORY_META,
+				DIRECTORY_META);
+
+		buffer.append(storageLocation);
+
+		if (!storageLocation.endsWith(fileSeparator)) {
+			buffer.append(fileSeparator);
+		}
+
+		buffer.append(metaDirectory);
+
+		if (!metaDirectory.endsWith(fileSeparator)) {
 			buffer.append(fileSeparator);
 		}
 

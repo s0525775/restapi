@@ -28,6 +28,7 @@ import com.jpeterson.littles3.bo.Acp;
 import com.jpeterson.littles3.bo.CanonicalUser;
 import com.jpeterson.littles3.bo.S3Object;
 import com.jpeterson.littles3.dao.S3ObjectDao;
+import java.io.EOFException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -84,7 +85,7 @@ public class FileS3ObjectDao extends FileBase implements S3ObjectDao {
 			throw new DataRetrievalFailureException("Could not find S3Object");
 		}
 
-		serializedObjectFile = new File(generateStoragePath()
+		serializedObjectFile = new File(generateMetaPath()
 				.append(bucket).append(fileSeparator).append(
 						relativeSerializedObjectFile).toString());
 
@@ -120,7 +121,7 @@ public class FileS3ObjectDao extends FileBase implements S3ObjectDao {
 		FileOutputStream fos = null;
 		ObjectOutputStream out = null;
 
-		bucketDirectoryPath = generateStoragePath().append(bucket).append(
+		bucketDirectoryPath = generateMetaPath().append(bucket).append(
 				fileSeparator).toString();
 
 		// load key index
@@ -183,11 +184,6 @@ public class FileS3ObjectDao extends FileBase implements S3ObjectDao {
 		String bucket = s3Object.getBucket();
 		String key = s3Object.getKey();
 
-                // Output for later if you haven't an IDE, just for tests
-                String file1 = "/tmp/testlog.txt";
-		String text1 = "TEST2\r\n";
-                FSLogger.writeLog(file1, text1);
-
                 // load key index
 		try {
 			keys = retrieveKeyIndex(bucket, true);
@@ -201,7 +197,7 @@ public class FileS3ObjectDao extends FileBase implements S3ObjectDao {
 			throw new DataRetrievalFailureException("Could not find S3Object");
 		}
 
-		serializedObjectFile = new File(generateStoragePath()
+		serializedObjectFile = new File(generateMetaPath()
 				.append(bucket).append(fileSeparator).append(
 						relativeSerializedObjectFile).toString());
 
@@ -500,7 +496,34 @@ public class FileS3ObjectDao extends FileBase implements S3ObjectDao {
 		return buffer;
 	}
 
-	@SuppressWarnings("unchecked")
+	/**
+	 * 
+	 * @return Example: C:/temp/StorageEngine/meta/objects/
+	 */
+	public StringBuffer generateMetaMainPath() {
+		StringBuffer buffer = new StringBuffer();
+		Configuration configuration = getConfiguration();
+		String metaLocation = configuration
+				.getString(CONFIG_META_LOCATION);
+		String metaDirectory = configuration.getString(CONFIG_DIRECTORY_META,
+				DIRECTORY_META);
+
+		buffer.append(metaLocation);
+
+		if (!metaLocation.endsWith(fileSeparator)) {
+			buffer.append(fileSeparator);
+		}
+
+		buffer.append(metaDirectory);
+
+		if (!metaDirectory.endsWith(fileSeparator)) {
+			buffer.append(fileSeparator);
+		}
+
+		return buffer;
+	}
+
+        @SuppressWarnings("unchecked")
 	private Map<String, String> retrieveKeyIndex(String bucket, boolean create)
 			throws IOException {
 		File serializedKeyIndex;
@@ -508,7 +531,7 @@ public class FileS3ObjectDao extends FileBase implements S3ObjectDao {
 		ObjectInputStream in = null;
 		HashMap<String, String> keys = null;
                 
-		serializedKeyIndex = new File(generateStoragePath().append(bucket)
+		serializedKeyIndex = new File(generateMetaPath().append(bucket)
 				.append(fileSeparator).toString(), "keys" + EXTENSION);
 
                 try {
@@ -533,17 +556,22 @@ public class FileS3ObjectDao extends FileBase implements S3ObjectDao {
 
 	private void storeKeyIndex(String bucket, Map<String, String> keys)
 			throws IOException {
-		File bucketDirectory;
-		File serializedKeyIndex;
+		File bucketDirectory1;
+		File bucketDirectory2;
+		File bucketDirectory3;
+                File serializedKeyIndex;
 		FileOutputStream fos = null;
 		ObjectOutputStream out = null;
 		File parent;
 
-                bucketDirectory = new File(generateStoragePath().append(bucket)
+                bucketDirectory1 = new File(generateMetaMainPath().toString());
+                bucketDirectory2 = new File(generateMetaPath().toString());
+                bucketDirectory3 = new File(generateMetaPath().append(bucket)
 				.append(fileSeparator).toString());
-		serializedKeyIndex = new File(bucketDirectory, "keys" + EXTENSION);
+		serializedKeyIndex = new File(bucketDirectory3, "keys" + EXTENSION);
 
 		if (keys.isEmpty()) {
+                        System.out.println("TESTG1");
 			// delete any existing serialized key index
 			if (serializedKeyIndex.delete()) {
 				// delete named bucket directory, if empty
@@ -555,21 +583,34 @@ public class FileS3ObjectDao extends FileBase implements S3ObjectDao {
 				}
 			}
 		} else {
-			// create bucket meta storage directory if necessary
-			if (!bucketDirectory.exists()) {
-				if (!bucketDirectory.mkdirs()) {
+                        System.out.println("TESTG2");
+			// create bucket meta storage directory if necessary (for Linux step by step)
+			if (!bucketDirectory1.exists()) {
+				if (!bucketDirectory1.mkdirs()) {
 					throw new IOException(
 							"Could not create objects meta directory: "
-									+ bucketDirectory);
+									+ bucketDirectory1);
 				}
 			}
-
+			if (!bucketDirectory2.exists()) {
+				if (!bucketDirectory2.mkdirs()) {
+					throw new IOException(
+							"Could not create objects meta directory: "
+									+ bucketDirectory2);
+				}
+			}
+			if (!bucketDirectory3.exists()) {
+				if (!bucketDirectory3.mkdirs()) {
+					throw new IOException(
+							"Could not create objects meta directory: "
+									+ bucketDirectory3);
+				}
+			}
 			// persist the key index
 			fos = new FileOutputStream(serializedKeyIndex, false);
 			out = new ObjectOutputStream(fos);
 			out.writeObject(keys);
 			out.close();
-                        out.close();
 		}
 	}
 }
